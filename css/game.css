@@ -1,0 +1,81 @@
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: system-ui, -apple-system, sans-serif;
+  background: #1a1a2e;
+  color: #eee;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100vh;
+}
+
+header {
+  text-align: center;
+  padding: 1rem;
+}
+
+h1 {
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+#toolbar {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+#toolbar button {
+  font-size: 1.25rem;
+  padding: 0.5rem 1rem;
+  border: 2px solid transparent;
+  border-radius: 0.5rem;
+  background: #16213e;
+  color: #eee;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+#toolbar button:hover {
+  border-color: #eee;
+}
+
+#toolbar button.active {
+  border-color: #7CB342;
+  background: #1b3a10;
+}
+
+#grid {
+  display: grid;
+  gap: 1px;
+  padding: 0.5rem;
+  background: #0f0f23;
+  border-radius: 0.5rem;
+  overflow: auto;
+  max-width: 95vw;
+  max-height: 80vh;
+}
+
+.cell {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  border-radius: 2px;
+  user-select: none;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.cell:hover {
+  outline: 2px solid #fff;
+  outline-offset: -2px;
+}
