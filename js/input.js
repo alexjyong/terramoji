@@ -41,18 +41,42 @@ function updateBiomeButtonSelection() {
   });
 }
 
-// --- Grid Cell Click Handler (T019b) ---
+// --- Grid Cell Click Handler (T019b) + Drag-to-Paint (T020b) ---
 
-gridEl.addEventListener('click', (e) => {
+let isPainting = false;
+let renderPending = false;
+
+gridEl.addEventListener('mousedown', (e) => {
+  const cellDiv = e.target.closest('.cell');
+  if (!cellDiv || !state.selectedBiome) return;
+  isPainting = true;
+  paintCell(cellDiv);
+});
+
+gridEl.addEventListener('mouseover', (e) => {
+  if (!isPainting) return;
   const cellDiv = e.target.closest('.cell');
   if (!cellDiv) return;
+  paintCell(cellDiv);
+});
 
+document.addEventListener('mouseup', () => {
+  isPainting = false;
+});
+
+function paintCell(cellDiv) {
   const row = parseInt(cellDiv.dataset.row, 10);
   const col = parseInt(cellDiv.dataset.col, 10);
+  changeCellBiome(row, col, state.selectedBiome);
+  scheduleRender();
+}
 
-  // Only edit if a biome is selected from the toolbar
-  if (state.selectedBiome) {
-    changeCellBiome(row, col, state.selectedBiome);
+// Throttled re-render for smooth drag painting
+function scheduleRender() {
+  if (renderPending) return;
+  renderPending = true;
+  requestAnimationFrame(() => {
     renderGrid();
-  }
-});
+    renderPending = false;
+  });
+}

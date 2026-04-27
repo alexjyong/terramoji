@@ -85,7 +85,7 @@
 - [x] T019a [US2] Implement grid cell click handler: update cell biome in SimulationState.grid in js/simulation.js
 - [x] T019b [US2] Call existing creature cleanup/spawn functions after biome change (or defer to US3's tick-based logic if creatures aren't live yet) in js/input.js
 - [x] T020 [US2] Wire biome change to call renderGrid() for updated display in js/input.js
-- [ ] T020b [US2] Right now, the biome change button is click each grid square to change it. Users should be able to click on a square and drag while holding down the mouse button to make more of that biome without having to click a bunch of times.
+- [x] T020b [US2] Right now, the biome change button is click each grid square to change it. Users should be able to click on a square and drag while holding down the mouse button to make more of that biome without having to click a bunch of times.
 
 **Checkpoint**: At this point, player can generate a planet AND manually edit terrain
 
