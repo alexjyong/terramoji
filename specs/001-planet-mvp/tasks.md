@@ -80,8 +80,8 @@
 ### Implementation for User Story 2
 
 - [x] T016 [P] [US2] Add biome selection buttons (🌊🌿🏜️🏔️🌲🌴❄️) to toolbar in index.html
-- [ ] T017 [P] [US2] Add toolbar button styles and active selection highlight in css/game.css
-- [ ] T018 [US2] Implement toolbar click handler: set SimulationState.selectedBiome, update visual selection in js/input.js
+- [x] T017 [P] [US2] Add toolbar button styles and active selection highlight in css/game.css
+- [x] T018 [US2] Implement toolbar click handler: set SimulationState.selectedBiome, update visual selection in js/input.js
 - [ ] T019a [US2] Implement grid cell click handler: update cell biome in SimulationState.grid in js/simulation.js
 - [ ] T019b [US2] Call existing creature cleanup/spawn functions after biome change (or defer to US3's tick-based logic if creatures aren't live yet) in js/input.js
 - [ ] T020 [US2] Wire biome change to call renderGrid() for updated display in js/input.js

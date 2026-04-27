@@ -197,3 +197,27 @@ h1 {
   );
   pointer-events: none;
 }
+
+/* --- Biome Selection Buttons --- */
+
+.biome-buttons {
+  display: flex;
+  gap: 0.25rem;
+  padding-left: 0.75rem;
+  border-left: 2px solid #333;
+  margin-left: 0.25rem;
+}
+
+.biome-buttons button {
+  font-size: 1.4rem;
+  padding: 0.35rem 0.55rem;
+  min-width: 2.5rem;
+  line-height: 1;
+}
+
+.biome-buttons button.active {
+  border-color: #7CB342;
+  background: #1b3a10;
+  box-shadow: 0 0 6px rgba(124, 179, 66, 0.5);
+  transform: scale(1.1);
+}

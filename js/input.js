@@ -20,3 +20,23 @@ function updatePauseButton() {
     btn.textContent = '⏸️ Pause';
   }
 }
+
+// --- Biome Selection (T018) ---
+
+document.querySelectorAll('.biome-buttons button').forEach((button) => {
+  button.addEventListener('click', () => {
+    const biome = button.dataset.biome;
+    state.selectedBiome = biome;
+    updateBiomeButtonSelection();
+  });
+});
+
+function updateBiomeButtonSelection() {
+  document.querySelectorAll('.biome-buttons button').forEach((button) => {
+    if (button.dataset.biome === state.selectedBiome) {
+      button.classList.add('active');
+    } else {
+      button.classList.remove('active');
+    }
+  });
+}
