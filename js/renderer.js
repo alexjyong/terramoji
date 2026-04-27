@@ -1,4 +1,4 @@
-// Emoji Earth — Renderer
+// TerraMoji — Renderer
 
 const gridEl = document.getElementById('grid');
 
@@ -27,6 +27,10 @@ function renderGrid() {
       const landmark = BIOMES[cell.biome].landmark;
       if (landmark) {
         div.textContent = landmark;
+      }
+      // Render cactus emoji on desert tiles
+      else if (cell.cactus) {
+        div.textContent = '🌵';
       }
       // Render creatures as emoji (entities remain emoji per constitution)
       else if (cell.creatures && cell.creatures.length > 0) {

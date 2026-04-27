@@ -1,4 +1,4 @@
-// Emoji Earth — Simulation Logic
+// TerraMoji — Simulation Logic
 
 // --- BIOMES Configuration ---
 const BIOMES = {
@@ -59,13 +59,23 @@ function generatePlanet() {
     }
   }
 
-  // Step 2: Cellular automata smoothing — 3 passes (preserve poles)
+  // Step 2: Enforce ice at poles BEFORE smoothing (locks pole boundaries)
+  enforcePoles();
+
+  // Step 3: Cellular automata smoothing — 3 passes
   for (let pass = 0; pass < 3; pass++) {
     smoothGrid();
   }
 
-  // Step 3: Re-enforce ice at poles after smoothing
-  enforcePoles();
+  // Step 3.5: Place cacti on ~20% of desert tiles (after smoothing)
+  const cells = state.grid.cells;
+  for (let r = 0; r < height; r++) {
+    for (let c = 0; c < width; c++) {
+      if (cells[r][c].biome === 'desert' && rng() < 0.2) {
+        cells[r][c].cactus = true;
+      }
+    }
+  }
 }
 
 function enforcePoles() {

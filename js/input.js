@@ -1,4 +1,4 @@
-// Emoji Earth — Input Handling
+// TerraMoji — Input Handling
 
 document.getElementById('btn-new-planet').addEventListener('click', () => {
   generatePlanet();
