@@ -137,3 +137,22 @@ function smoothGrid() {
 //   2. Calls moveCreatures(), spawnCreatures(), removes incompatible creatures
 //   3. Increments state.tick
 // TODO: Implement startSimulation() with setInterval(tick, 1000)
+
+// --- Manual Biome Editing (T019a) ---
+
+function changeCellBiome(row, col, newBiome) {
+  const cell = state.grid.cells[row][col];
+  if (!cell) return;
+
+  cell.biome = newBiome;
+
+  // Clear incompatible creatures when biome changes
+  if (cell.creatures && cell.creatures.length > 0) {
+    cell.creatures = [];
+  }
+
+  // Clear cactus flag when leaving desert
+  if (newBiome !== 'desert') {
+    cell.cactus = false;
+  }
+}

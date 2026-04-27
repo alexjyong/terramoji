@@ -73,7 +73,7 @@
 
 ## Phase 4: User Story 2 - Place Biomes via Toolbar (Priority: P2)
 
-**Goal**: Player selects a biome from toolbar and clicks grid tiles to change terrain
+**Goal**: Player selects a biome from toolbar and clicks grid tiles to change terrain. User can also click one grid icon and while holding down the mouse, drag and make more of the same biome.
 
 **Independent Test**: Generate planet → select grassland from toolbar → click water tile → tile changes to grassland emoji
 
@@ -82,9 +82,10 @@
 - [x] T016 [P] [US2] Add biome selection buttons (🌊🌿🏜️🏔️🌲🌴❄️) to toolbar in index.html
 - [x] T017 [P] [US2] Add toolbar button styles and active selection highlight in css/game.css
 - [x] T018 [US2] Implement toolbar click handler: set SimulationState.selectedBiome, update visual selection in js/input.js
-- [ ] T019a [US2] Implement grid cell click handler: update cell biome in SimulationState.grid in js/simulation.js
-- [ ] T019b [US2] Call existing creature cleanup/spawn functions after biome change (or defer to US3's tick-based logic if creatures aren't live yet) in js/input.js
-- [ ] T020 [US2] Wire biome change to call renderGrid() for updated display in js/input.js
+- [x] T019a [US2] Implement grid cell click handler: update cell biome in SimulationState.grid in js/simulation.js
+- [x] T019b [US2] Call existing creature cleanup/spawn functions after biome change (or defer to US3's tick-based logic if creatures aren't live yet) in js/input.js
+- [x] T020 [US2] Wire biome change to call renderGrid() for updated display in js/input.js
+- [ ] T020b [US2] Right now, the biome change button is click each grid square to change it. Users should be able to click on a square and drag while holding down the mouse button to make more of that biome without having to click a bunch of times.
 
 **Checkpoint**: At this point, player can generate a planet AND manually edit terrain
 

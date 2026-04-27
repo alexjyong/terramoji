@@ -40,3 +40,19 @@ function updateBiomeButtonSelection() {
     }
   });
 }
+
+// --- Grid Cell Click Handler (T019b) ---
+
+gridEl.addEventListener('click', (e) => {
+  const cellDiv = e.target.closest('.cell');
+  if (!cellDiv) return;
+
+  const row = parseInt(cellDiv.dataset.row, 10);
+  const col = parseInt(cellDiv.dataset.col, 10);
+
+  // Only edit if a biome is selected from the toolbar
+  if (state.selectedBiome) {
+    changeCellBiome(row, col, state.selectedBiome);
+    renderGrid();
+  }
+});
