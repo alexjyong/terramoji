@@ -77,6 +77,26 @@
 - Jest/Vitest: Requires build config, node_modules, overkill for PoC
 - Browser-based tests: Adds HTML test harness, unnecessary complexity
 
+### 8. Creature-Biome Compatibility: Many-to-Many Mapping
+
+**Decision**: Creatures can inhabit multiple biome types via a `compatibleBiomes` array (replaces single `homeBiome`). E.g., deer (🦌) can live on both `forest` and `grassland`.
+
+**Rationale**: Ecological realism — creatures in nature migrate between adjacent habitat types. A 1:1 mapping forces unrealistic hard boundaries where a cow on grassland adjacent to forest would be removed if the grassland tile changed, even though cows could reasonably survive in forest edges. Many-to-many reduces unnecessary creature deaths during biome editing and creates more resilient simulation dynamics.
+
+**Alternatives considered**:
+- Strict 1:1 homeBiome: Simpler but creates brittle creature populations that die from single-tile edits
+- All creatures on all biomes: Removes biome identity, defeats purpose of terrain types
+
+### 9. Simulation Pause/Resume Toggle
+
+**Decision**: Add a pause/resume toggle button to toolbar. When paused, tick loop is skipped but rendering continues (player can still inspect/edit terrain).
+
+**Rationale**: Player control over simulation pace enables deliberate observation and editing without creatures moving during terrain manipulation. Future expansion path includes speed control (slow/normal/fast) without changing the pause/resume API.
+
+**Alternatives considered**:
+- No controls (simulation always runs): Removes player agency, makes deliberate editing frustrating
+- Speed control only (no pause): More complex UI, pause is higher-value for MVP
+
 ## Summary
 
 All technical unknowns from the plan are resolved. The constitution's constraints (vanilla JS, DOM rendering, emoji-only, no external deps) significantly narrowed the decision space. No NEEDS CLARIFICATION items remain.

@@ -2,11 +2,11 @@
 
 **Input**: Design documents from `/specs/001-planet-mvp/`
 **Prerequisites**: plan.md (complete), spec.md (complete), research.md (complete), data-model.md (complete)
-**Last Updated**: 2026-04-25
+**Last Updated**: 2026-04-27
 
 **Amendment**: 2026-04-25 — Constitution v1.1.0: base terrain via CSS gradients/textures, emoji for entities only. Added ice biome (T006 updated to 5 types), pole enforcement (T011 updated), renderer no longer places emoji on base terrain (T012 updated).
 **Amendment**: 2026-04-26 — Added forest and jungle biomes (7 total, T006 updated). Mountain/forest/jungle tiles display landmark emoji (🏔️/🌲/🌴) as permanent entities. Toolbar buttons expanded to 7 biomes (T016 updated).
-**Amendment**: 2026-04-27 — Added User Story 2.5 (Inspect Tile Details, Phase 4.5) with floating tooltip showing biome/creature/civilization info. Added `civilization` field placeholder to cell data model (T038).
+**Amendment**: 2026-04-27 — Added User Story 2.5 (Inspect Tile Details, Phase 4.5) with floating tooltip showing biome/creature/civilization info. Added `civilization` field placeholder to cell data model (T038). Clarification session: many-to-many creature-biome mapping, pause/resume toggle (T039-T041), live editing during simulation.
 
 **Tests**: Included — constitution mandates test-first for simulation logic.
 
@@ -39,7 +39,7 @@
 
 - [x] T005 Implement mulberry32 PRNG function in js/simulation.js
 - [x] T006 Define BIOMES configuration object (7 types: water, grassland, desert, mountain, forest, jungle, ice — each with emoji, color, creature, and landmark mappings) in js/simulation.js
-- [x] T007 Initialize SimulationState object structure (grid, tick, selectedBiome, isRunning) in js/simulation.js
+- [x] T007 Initialize SimulationState object structure (grid, tick, selectedBiome, isRunning, isPaused) in js/simulation.js
 - [x] T008 Create render() stub function that reads SimulationState and updates DOM in js/renderer.js
 
 **Checkpoint**: Foundation ready — user story implementation can now begin
@@ -126,13 +126,19 @@
 ### Implementation for User Story 3
 
 - [ ] T024 [US3] Implement spawnCreatures() function: iterate grid, add creatures to cells based on biome type, respect max 5 per cell and 200 total in js/simulation.js
-- [ ] T025 [US3] Implement moveCreatures() function: for each creature, pick random adjacent cell, move only if biome matches homeBiome in js/simulation.js
+- [ ] T025 [US3] Implement moveCreatures() function: for each creature, pick random adjacent cell, move only if cell biome is in creature's compatibleBiomes set in js/simulation.js
 - [ ] T026 [US3] Implement tick() function: call moveCreatures(), spawnCreatures(), remove incompatible creatures, increment tick counter in js/simulation.js
 - [ ] T027 [US3] Implement startSimulation() function: setInterval(tick, 1000), set isRunning flag in js/simulation.js
 - [ ] T028 [US3] Call spawnCreatures() and startSimulation() after generatePlanet() completes in js/input.js
 - [ ] T029 [US3] Update renderGrid() to display creature emoji(s) within each cell div on top of CSS terrain; landmark emoji on mountain/forest/jungle tiles; no base terrain emoji for other biomes, only creature entities in js/renderer.js
 
-**Checkpoint**: All user stories should now be independently functional — full core loop works
+### Pause/Resume Control (FR-012)
+
+- [x] T039 [P] [US3] Add "⏸️ Pause" / "▶️ Resume" toggle button to toolbar in index.html
+- [x] T040 [US3] Implement pause/resume handler: toggle `isPaused` flag, skip tick loop when paused, update button visual state in js/input.js
+- [x] T041 [US3] Reset `isPaused: false` on new planet generation in js/simulation.js
+
+**Checkpoint**: All user stories should now be independently functional — full core loop works, player can pause simulation
 
 ---
 

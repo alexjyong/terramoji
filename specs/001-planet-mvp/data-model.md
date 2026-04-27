@@ -1,11 +1,12 @@
 # Data Model: Planet MVP
 
 **Date**: 2026-04-24
-**Last Updated**: 2026-04-25
+**Last Updated**: 2026-04-27
 **Branch**: `001-planet-mvp`
 
 **Amendment**: 2026-04-25 — Added `ice` biome (constitution v1.1.0), base terrain now rendered via CSS gradients/textures, emoji reserved for entities only.
 **Amendment**: 2026-04-26 — Added `forest` and `jungle` biomes; mountain/forest/jungle tiles display landmark emoji (🏔️/🌲/🌴) as permanent entities per Constitution Principle II.
+**Amendment**: 2026-04-27 — Clarification session: creature-biome mapping is many-to-many (`compatibleBiomes` array replaces `homeBiome`), pause/resume toggle added (`isPaused` field), live editing during simulation, seed internal-only.
 
 ## Entities
 
@@ -55,13 +56,13 @@ Enum of terrain types. Base terrain is rendered via CSS gradients/textures; emoj
 
 ### Creature
 
-A living entity that moves on the grid.
+A living entity that moves on the grid. Creatures can inhabit multiple biome types (many-to-many mapping) — e.g., a deer (🦌) can live on both `forest` and `grassland`.
 
 | Field | Type | Description |
 |-------|------|-------------|
 | `id` | `string` | Unique identifier (e.g., `"c_001"`) |
 | `emoji` | `string` | Visual representation (e.g., `"🐄"`) |
-| `homeBiome` | `BiomeType` | Biome this creature belongs to |
+| `compatibleBiomes` | `BiomeType[]` | Set of biomes this creature can inhabit (1-N) |
 | `row` | `number` | Current row position (0-29) |
 | `col` | `number` | Current column position (0-29) |
 
@@ -69,7 +70,7 @@ A living entity that moves on the grid.
 {
   id: 'c_001',
   emoji: '🐄',
-  homeBiome: 'grassland',
+  compatibleBiomes: ['grassland', 'forest'],
   row: 15,
   col: 22
 }
@@ -85,13 +86,15 @@ The single source of truth for the game.
 | `tick` | `number` | Current tick count (starts at 0) |
 | `selectedBiome` | `BiomeType \| null` | Currently selected biome in toolbar |
 | `isRunning` | `boolean` | Whether simulation tick loop is active |
+| `isPaused` | `boolean` | Whether simulation is paused (player toggle, default: false) |
 
 ```javascript
 {
   grid: { width: 30, height: 30, cells: [][] },
   tick: 0,
   selectedBiome: null,
-  isRunning: true
+  isRunning: true,
+  isPaused: false
 }
 ```
 
@@ -112,26 +115,29 @@ SimulationState
 - Grid dimensions MUST be between 10×10 and 50×50 (default 30×30)
 - Creature count per cell MUST NOT exceed 5 (visual clarity limit)
 - Total creature count MUST NOT exceed 200 (performance guardrail)
-- Creatures MUST only exist on cells matching their `homeBiome`
+- Creatures MUST only exist on cells whose biome is in the creature's `compatibleBiomes` set (many-to-many — creature survives if new biome is any compatible type)
 - `selectedBiome` MUST be one of the 7 defined biome types or `null`
 - Pole rows (top 3, bottom 3) MUST always be `ice` biome — player cannot override
 
 ## State Transitions
 
-### Per Tick (automatic)
-1. For each creature on grid: attempt move to random adjacent compatible cell
+### Per Tick (automatic, skipped when `isPaused` is true)
+1. For each creature on grid: attempt move to random adjacent cell whose biome is in creature's `compatibleBiomes`
 2. For each biome with fewer creatures than target: spawn new creature on random compatible cell
-3. For each creature on incompatible cell (biome was changed): remove creature
+3. For each creature on incompatible cell (biome was changed to type NOT in creature's `compatibleBiomes`): remove creature
 4. Increment `tick` counter
 
-### On Player Action (biome placement)
+### On Player Action (biome placement — live during simulation)
 1. Set `selectedBiome` from toolbar click
-2. Change `cells[row][col].biome` on grid click
-3. Remove creatures on changed cell that are incompatible with new biome
+2. Change `cells[row][col].biome` on grid click (takes effect immediately, even while simulation runs)
+3. Remove creatures on changed cell whose `compatibleBiomes` does NOT include new biome type
 4. Spawn creatures for new biome if below target count
 
+### On Pause/Resume Toggle
+1. Toggle `isPaused` flag; when paused, tick loop is skipped but rendering continues
+
 ### On New Planet
-1. Reset entire `SimulationState`
+1. Reset entire `SimulationState` (including `isPaused: false`)
 2. Generate new grid with seeded PRNG
 3. Run cellular automata smoothing passes
 4. Spawn initial creatures per biome

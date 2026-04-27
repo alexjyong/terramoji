@@ -1,15 +1,16 @@
 # Implementation Plan: Planet MVP
 
-**Branch**: `001-planet-mvp` | **Date**: 2026-04-24 | **Last Updated**: 2026-04-25
+**Branch**: `001-planet-mvp` | **Date**: 2026-04-24 | **Last Updated**: 2026-04-27
 **Spec**: [spec.md](./spec.md)
 **Input**: Feature specification from `/specs/001-planet-mvp/spec.md`
 
 **Amendment**: 2026-04-25 — Constitution v1.1.0: base terrain rendered via CSS gradients/textures, emoji reserved for entities. Added ice biome with pole enforcement.
 **Amendment**: 2026-04-26 — Added forest and jungle biomes (7 total). Mountain/forest/jungle tiles display landmark emoji (🏔️/🌲/🌴) as permanent entities.
+**Amendment**: 2026-04-27 — Clarification session: creature-biome mapping is many-to-many (not 1:1), mountains have own creature (🐐), pause/resume toggle added, seed internal-only, live editing during simulation.
 
 ## Summary
 
-Build a browser-based SimEarth-inspired prototype: a 30×30 grid of terrain tiles (rendered via CSS gradients/textures) that can be procedurally generated, manually edited via a toolbar, and populated with emoji creatures that move on a tick-based simulation. Mountain/forest/jungle tiles display landmark emoji (🏔️/🌲/🌴). Vanilla JavaScript, CSS Grid rendering, zero external dependencies. Ice biome enforced at polar rows. 7 biome types total.
+Build a browser-based SimEarth-inspired prototype: a 30×30 grid of terrain tiles (rendered via CSS gradients/textures) that can be procedurally generated, manually edited via a toolbar (live during simulation), and populated with emoji creatures that move on a tick-based simulation. Mountain/forest/jungle tiles display landmark emoji (🏔️/🌲/🌴). Creatures have many-to-many biome compatibility (can inhabit multiple biome types). Vanilla JavaScript, CSS Grid rendering, zero external dependencies. Ice biome enforced at polar rows. 7 biome types total. Pause/resume toggle for simulation control.
 
 ## Technical Context
 

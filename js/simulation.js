@@ -22,6 +22,7 @@ const state = {
   tick: 0,
   selectedBiome: null,
   isRunning: false,
+  isPaused: false,
 };
 
 // --- mulberry32 PRNG ---
@@ -43,6 +44,7 @@ function generatePlanet() {
 
   // Reset state
   state.tick = 0;
+  state.isPaused = false;
   state.grid.cells = [];
 
   // Step 1: Fill grid with random biomes
@@ -128,3 +130,10 @@ function smoothGrid() {
 
   state.grid.cells = next;
 }
+
+// --- Tick Loop (T026/T027) ---
+// TODO: Implement tick() function that:
+//   1. Returns early if state.isPaused is true (per data-model.md: "skipped when isPaused is true")
+//   2. Calls moveCreatures(), spawnCreatures(), removes incompatible creatures
+//   3. Increments state.tick
+// TODO: Implement startSimulation() with setInterval(tick, 1000)

@@ -10,6 +10,16 @@
 - 2026-04-25: Added ice biome (constitution v1.1.0), switched base terrain to CSS gradients/textures (emoji reserved for entities only), added pole enforcement
 - 2026-04-26: Added forest and jungle biomes; mountain tiles display 🏔️ landmark emoji; forest/jungle tiles display tree emoji (🌲/🌴) as permanent landmark; toolbar expanded to 7 biomes
 
+## Clarifications
+
+### Session 2026-04-27
+
+- Q: Creature population limits? → A: Per-cell cap (5) + global cap (200 total)
+- Q: Simulation behavior during terrain editing? → A: Live — simulation continues while player edits
+- Q: Mountain biome creature compatibility? → A: Mountains have own creature (🐐); creatures can inhabit multiple biomes (many-to-many, not 1:1)
+- Q: Simulation pause/resume controls? → A: Pause/Resume toggle button (expand to speed control later)
+- Q: Planet seed reproducibility? → A: Internal only — seed is random and not user-exposed
+
 ## User Scenarios & Testing
 
 ### User Story 1 - Generate & Display a Planet (Priority: P1)
@@ -61,6 +71,7 @@ After terrain is placed, matching creatures spawn on compatible biomes and move 
 5. **Given** ice biomes exist at poles, **When** the simulation runs, **Then** ice creatures (🐧) spawn on ice tiles
 6. **Given** a forest biome exists, **When** the simulation runs, **Then** forest creatures (🦌) spawn on forest tiles
 7. **Given** a jungle biome exists, **When** the simulation runs, **Then** jungle creatures (🦜) spawn on jungle tiles
+8. **Given** a mountain biome exists, **When** the simulation runs, **Then** mountain creatures (🐐) spawn on mountain tiles
 
 ---
 
@@ -68,7 +79,8 @@ After terrain is placed, matching creatures spawn on compatible biomes and move 
 
 - What happens when all adjacent tiles are incompatible biomes? (Creature stays in place)
 - What happens when the grid is full of one biome type? (Creatures still spawn and move within that biome)
-- What happens if the player changes a biome that has creatures on it? (Creatures on now-incompatible terrain are removed)
+- What happens if the player changes a biome that has creatures on it? (Creatures removed only if the new biome is not among their compatible biomes — creatures with multi-biome compatibility may survive)
+- What happens when the player edits terrain while simulation is running? (Simulation continues live; biome changes take effect immediately, creatures on changed tiles are removed/spawned per new biome)
 
 ## Requirements
 
@@ -80,15 +92,18 @@ After terrain is placed, matching creatures spawn on compatible biomes and move 
 - **FR-004**: System MUST allow the player to change any grid square's biome by clicking after toolbar selection
 - **FR-005**: System MUST spawn creatures matching the biome type when terrain is placed or on initial generation
 - **FR-006**: System MUST advance creature positions on a periodic tick (default: 1 second)
-- **FR-007**: Creatures MUST only move to adjacent tiles of a compatible biome type
-- **FR-008**: System MUST remove creatures whose biome was changed to an incompatible type
+- **FR-007**: Creatures MUST only move to adjacent tiles of a compatible biome type (creatures can have multiple compatible biomes — many-to-many mapping)
+- **FR-008**: System MUST remove creatures whose biome was changed to an incompatible type (all compatible biomes for that creature are absent)
 - **FR-009**: System MUST display creatures as emoji characters overlaid on terrain tiles
+- **FR-010**: System MUST enforce creature population limits: maximum 5 creatures per cell and 200 creatures total across the entire grid
+- **FR-011**: Mountain biomes MUST support their own creature type (🐐 goat) in addition to landmark emoji (🏔️)
+- **FR-012**: System MUST provide a Pause/Resume toggle button in the toolbar to control simulation tick execution (future expansion: speed control)
 
 ### Key Entities
 
 - **Grid**: 30×30 array of cells; each cell has a biome type and optional creature list
-- **Biome**: Terrain type with associated emoji, compatible creature types, and color
-- **Creature**: Entity with emoji representation, home biome type, and current grid position
+- **Biome**: Terrain type with associated emoji, compatible creature types (many-to-many), and color
+- **Creature**: Entity with emoji representation, set of compatible biome types (not limited to one), and current grid position
 - **Simulation Tick**: Time step that advances creature movement and spawning logic
 
 ## Success Criteria
