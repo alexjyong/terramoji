@@ -79,7 +79,7 @@
 
 ### Implementation for User Story 2
 
-- [ ] T016 [P] [US2] Add biome selection buttons (🌊🌿🏜️🏔️🌲🌴❄️) to toolbar in index.html
+- [x] T016 [P] [US2] Add biome selection buttons (🌊🌿🏜️🏔️🌲🌴❄️) to toolbar in index.html
 - [ ] T017 [P] [US2] Add toolbar button styles and active selection highlight in css/game.css
 - [ ] T018 [US2] Implement toolbar click handler: set SimulationState.selectedBiome, update visual selection in js/input.js
 - [ ] T019a [US2] Implement grid cell click handler: update cell biome in SimulationState.grid in js/simulation.js
