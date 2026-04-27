@@ -73,9 +73,127 @@ h1 {
   user-select: none;
   cursor: pointer;
   transition: background-color 0.15s;
+  position: relative;
+  overflow: hidden;
 }
 
 .cell:hover {
   outline: 2px solid #fff;
   outline-offset: -2px;
+}
+
+/* --- Biome Terrain Styles (CSS gradients + textures) --- */
+
+.cell::before {
+  z-index: -1; /* Keep texture behind emoji text */
+}
+
+.cell[data-biome="water"] {
+  background: linear-gradient(135deg, #1e5799 0%, #2989d8 50%, #2076b8 100%);
+}
+
+.cell[data-biome="water"]::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    90deg,
+    transparent,
+    transparent 4px,
+    rgba(255, 255, 255, 0.06) 4px,
+    rgba(255, 255, 255, 0.06) 8px
+  );
+  pointer-events: none;
+}
+
+.cell[data-biome="grassland"] {
+  background: linear-gradient(135deg, #558b2f 0%, #7cb342 50%, #689f38 100%);
+}
+
+.cell[data-biome="grassland"]::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle 1px at 6px 6px, rgba(30, 80, 10, 0.25) 50%, transparent 50%),
+              radial-gradient(circle 1px at 16px 14px, rgba(30, 80, 10, 0.25) 50%, transparent 50%);
+  pointer-events: none;
+}
+
+.cell[data-biome="desert"] {
+  background: linear-gradient(135deg, #d4a843 0%, #e8b84d 50%, #c99a32 100%);
+}
+
+.cell[data-biome="desert"]::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    170deg,
+    transparent,
+    transparent 3px,
+    rgba(160, 110, 30, 0.15) 3px,
+    rgba(160, 110, 30, 0.15) 6px
+  );
+  pointer-events: none;
+}
+
+.cell[data-biome="mountain"] {
+  background: linear-gradient(135deg, #6d4c41 0%, #8d6e63 50%, #795548 100%);
+}
+
+.cell[data-biome="mountain"]::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(45deg, transparent 40%, rgba(255, 255, 255, 0.1) 45%, transparent 50%),
+    linear-gradient(-45deg, transparent 40%, rgba(255, 255, 255, 0.1) 45%, transparent 50%);
+  pointer-events: none;
+}
+
+.cell[data-biome="ice"] {
+  background: linear-gradient(135deg, #e0f7fa 0%, #b2ebf2 40%, #e0f2f1 100%);
+}
+
+.cell[data-biome="ice"]::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(30deg, rgba(255, 255, 255, 0.5) 25%, transparent 25%, transparent 75%, rgba(255, 255, 255, 0.5) 75%),
+    linear-gradient(-30deg, rgba(255, 255, 255, 0.5) 25%, transparent 25%, transparent 75%, rgba(255, 255, 255, 0.5) 75%);
+  background-size: 8px 8px;
+  pointer-events: none;
+}
+
+.cell[data-biome="forest"] {
+  background: linear-gradient(135deg, #1b5e20 0%, #2e7d32 50%, #388e3c 100%);
+}
+
+.cell[data-biome="forest"]::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle 2px at 5px 8px, rgba(27, 94, 32, 0.4) 50%, transparent 50%),
+              radial-gradient(circle 2px at 18px 5px, rgba(27, 94, 32, 0.4) 50%, transparent 50%),
+              radial-gradient(circle 2px at 12px 18px, rgba(27, 94, 32, 0.4) 50%, transparent 50%);
+  pointer-events: none;
+}
+
+.cell[data-biome="jungle"] {
+  background: linear-gradient(135deg, #0a3d0a 0%, #1b5e20 50%, #2e7d32 100%);
+}
+
+.cell[data-biome="jungle"]::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 3px,
+    rgba(27, 94, 32, 0.2) 3px,
+    rgba(27, 94, 32, 0.2) 6px
+  );
+  pointer-events: none;
 }

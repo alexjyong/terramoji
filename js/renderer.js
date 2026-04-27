@@ -21,8 +21,19 @@ function renderGrid() {
       div.className = 'cell';
       div.dataset.row = r;
       div.dataset.col = c;
-      div.style.backgroundColor = BIOMES[cell.biome].color;
-      div.textContent = BIOMES[cell.biome].emoji;
+      div.dataset.biome = cell.biome; // CSS selector hook for biome styles
+
+      // Render landmark emoji for mountain/forest/jungle (permanent entities per Constitution II)
+      const landmark = BIOMES[cell.biome].landmark;
+      if (landmark) {
+        div.textContent = landmark;
+      }
+      // Render creatures as emoji (entities remain emoji per constitution)
+      else if (cell.creatures && cell.creatures.length > 0) {
+        div.textContent = BIOMES[cell.biome].creature;
+      }
+      // No emoji on base terrain — CSS gradients/textures handle visuals
+
       gridEl.appendChild(div);
     }
   }

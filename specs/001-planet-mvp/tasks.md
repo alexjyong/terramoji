@@ -2,6 +2,10 @@
 
 **Input**: Design documents from `/specs/001-planet-mvp/`
 **Prerequisites**: plan.md (complete), spec.md (complete), research.md (complete), data-model.md (complete)
+**Last Updated**: 2026-04-25
+
+**Amendment**: 2026-04-25 — Constitution v1.1.0: base terrain via CSS gradients/textures, emoji for entities only. Added ice biome (T006 updated to 5 types), pole enforcement (T011 updated), renderer no longer places emoji on base terrain (T012 updated).
+**Amendment**: 2026-04-26 — Added forest and jungle biomes (7 total, T006 updated). Mountain/forest/jungle tiles display landmark emoji (🏔️/🌲/🌴) as permanent entities. Toolbar buttons expanded to 7 biomes (T016 updated).
 
 **Tests**: Included — constitution mandates test-first for simulation logic.
 
@@ -33,7 +37,7 @@
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
 - [ ] T005 Implement mulberry32 PRNG function in js/simulation.js
-- [ ] T006 Define BIOMES configuration object (4 types: water, grassland, desert, mountain with emoji, color, creature mappings) in js/simulation.js
+- [ ] T006 Define BIOMES configuration object (7 types: water, grassland, desert, mountain, forest, jungle, ice — each with emoji, color, creature, and landmark mappings) in js/simulation.js
 - [ ] T007 Initialize SimulationState object structure (grid, tick, selectedBiome, isRunning) in js/simulation.js
 - [ ] T008 Create render() stub function that reads SimulationState and updates DOM in js/renderer.js
 
@@ -43,24 +47,24 @@
 
 ## Phase 3: User Story 1 - Generate & Display a Planet (Priority: P1) 🎯 MVP
 
-**Goal**: Player clicks "New Planet" and sees a 30×30 grid of emoji terrain tiles with clustered biomes
+**Goal**: Player clicks "New Planet" and sees a 30×30 grid of terrain tiles (CSS-styled) with clustered biomes and ice at poles
 
-**Independent Test**: Load page → click "New Planet" → verify grid of emoji tiles appears with multiple biome types
+**Independent Test**: Load page → click "New Planet" → verify grid of styled tiles appears with multiple biome types and ice at top/bottom rows
 
 ### Tests for User Story 1 ⚠️
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
 - [ ] T009 [P] [US1] Test mulberry32 PRNG produces deterministic sequences in tests/test_simulation.js
-- [ ] T010 [P] [US1] Test terrain generation creates 30×30 grid with all 4 biome types in tests/test_simulation.js
+- [ ] T010 [P] [US1] Test terrain generation creates 30×30 grid with all 7 biome types, ice enforced at poles, and smoothing preserves grid in tests/test_simulation.js
 
 ### Implementation for User Story 1
 
-- [ ] T011 [US1] Implement generatePlanet() function: seed PRNG, fill grid with random biomes, apply 2-3 cellular automata smoothing passes in js/simulation.js
-- [ ] T012 [US1] Implement renderGrid() function: create 30×30 CSS Grid of div cells with biome emoji and background color in js/renderer.js
+- [ ] T011 [US1] Implement generatePlanet() function: seed PRNG, fill grid with random biomes (ice forced at pole rows), apply 2-3 cellular automata smoothing passes, re-enforce poles in js/simulation.js
+- [ ] T012 [US1] Implement renderGrid() function: create 30×30 CSS Grid of div cells with `data-biome` attribute for CSS styling; landmark emoji displayed on mountain/forest/jungle tiles; creature emoji only displayed when creatures present (no emoji on base terrain for other biomes) in js/renderer.js
 - [ ] T013 [US1] Add "🌍 New Planet" button to toolbar container in index.html
 - [ ] T014 [US1] Wire "New Planet" button click handler: call generatePlanet() then renderGrid() in js/input.js
-- [ ] T015 [US1] Add CSS Grid layout styles for 30×30 grid with cell sizing and biome-specific background colors in css/game.css
+- [ ] T015 [US1] Add CSS Grid layout styles for 30×30 grid with biome-specific CSS gradient backgrounds and pseudo-element textures in css/game.css
 
 **Checkpoint**: At this point, User Story 1 should be fully functional — player can generate and see a planet
 
@@ -74,7 +78,7 @@
 
 ### Implementation for User Story 2
 
-- [ ] T016 [P] [US2] Add biome selection buttons (🌊🌿🏜️🏔️) to toolbar in index.html
+- [ ] T016 [P] [US2] Add biome selection buttons (🌊🌿🏜️🏔️🌲🌴❄️) to toolbar in index.html
 - [ ] T017 [P] [US2] Add toolbar button styles and active selection highlight in css/game.css
 - [ ] T018 [US2] Implement toolbar click handler: set SimulationState.selectedBiome, update visual selection in js/input.js
 - [ ] T019 [US2] Implement grid cell click handler: change cell biome to selectedBiome, remove incompatible creatures, spawn new creatures if needed in js/input.js
@@ -105,7 +109,7 @@
 - [ ] T026 [US3] Implement tick() function: call moveCreatures(), spawnCreatures(), remove incompatible creatures, increment tick counter in js/simulation.js
 - [ ] T027 [US3] Implement startSimulation() function: setInterval(tick, 1000), set isRunning flag in js/simulation.js
 - [ ] T028 [US3] Call spawnCreatures() and startSimulation() after generatePlanet() completes in js/input.js
-- [ ] T029 [US3] Update renderGrid() to display creature emoji(s) within each cell div alongside terrain emoji in js/renderer.js
+- [ ] T029 [US3] Update renderGrid() to display creature emoji(s) within each cell div on top of CSS terrain; landmark emoji on mountain/forest/jungle tiles; no base terrain emoji for other biomes, only creature entities in js/renderer.js
 
 **Checkpoint**: All user stories should now be independently functional — full core loop works
 

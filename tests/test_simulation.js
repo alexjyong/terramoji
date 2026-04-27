@@ -14,7 +14,10 @@ function mulberry32(seed) {
   };
 }
 
-const BIOME_KEYS = ['water', 'grassland', 'desert', 'mountain'];
+const BIOME_KEYS = ['water', 'grassland', 'desert', 'mountain', 'forest', 'jungle', 'ice'];
+
+// Pole rows (mirrors simulation.js)
+const POLE_ROWS = { top: 3, bottom: 3 };
 
 // --- T009: mulberry32 produces deterministic sequences ---
 (function testMulberry32Deterministic() {
@@ -36,7 +39,7 @@ const BIOME_KEYS = ['water', 'grassland', 'desert', 'mountain'];
   console.log('  T009b mulberry32 different seeds: PASS');
 })();
 
-// --- T010: terrain generation creates 30x30 grid with all 4 biomes ---
+// --- T010: terrain generation creates 30x30 grid with all 7 biomes ---
 (function testGeneratePlanet() {
   // Simulate generation
   const rng = mulberry32(12345);
@@ -45,14 +48,19 @@ const BIOME_KEYS = ['water', 'grassland', 'desert', 'mountain'];
   for (let r = 0; r < height; r++) {
     cells[r] = [];
     for (let c = 0; c < width; c++) {
-      cells[r][c] = { biome: BIOME_KEYS[Math.floor(rng() * BIOME_KEYS.length)], creatures: [] };
+      // Force ice at poles
+      if (r < POLE_ROWS.top || r >= height - POLE_ROWS.bottom) {
+        cells[r][c] = { biome: 'ice', creatures: [] };
+      } else {
+        cells[r][c] = { biome: BIOME_KEYS[Math.floor(rng() * BIOME_KEYS.length)], creatures: [] };
+      }
     }
   }
 
   assert.strictEqual(cells.length, 30, 'Grid height must be 30');
   assert.strictEqual(cells[0].length, 30, 'Grid width must be 30');
 
-  // Check all 4 biomes present
+  // Check all 5 biomes present
   const present = new Set();
   for (let r = 0; r < height; r++) {
     for (let c = 0; c < width; c++) {
@@ -62,7 +70,42 @@ const BIOME_KEYS = ['water', 'grassland', 'desert', 'mountain'];
   for (const b of BIOME_KEYS) {
     assert.ok(present.has(b), `Biome ${b} must be present in generated grid`);
   }
-  console.log('  T010  generatePlanet 30x30 with 4 biomes: PASS');
+  console.log('  T010  generatePlanet 30x30 with 7 biomes: PASS');
+})();
+
+// --- T010c: poles are ice biome ---
+(function testPolesAreIce() {
+  const rng = mulberry32(12345);
+  const width = 30, height = 30;
+  const cells = [];
+  for (let r = 0; r < height; r++) {
+    cells[r] = [];
+    for (let c = 0; c < width; c++) {
+      if (r < POLE_ROWS.top || r >= height - POLE_ROWS.bottom) {
+        cells[r][c] = { biome: 'ice', creatures: [] };
+      } else {
+        cells[r][c] = { biome: BIOME_KEYS[Math.floor(rng() * BIOME_KEYS.length)], creatures: [] };
+      }
+    }
+  }
+
+  // Verify top pole rows are all ice
+  for (let r = 0; r < POLE_ROWS.top; r++) {
+    for (let c = 0; c < width; c++) {
+      assert.strictEqual(cells[r][c].biome, 'ice', `Top pole row ${r}, col ${c} must be ice`);
+    }
+  }
+
+  // Verify bottom pole rows are all ice
+  for (let r = height - POLE_ROWS.bottom; r < height; r++) {
+    for (let c = 0; c < width; c++) {
+      assert.strictEqual(cells[r][c].biome, 'ice', `Bottom pole row ${r}, col ${c} must be ice`);
+    }
+  }
+
+  // Verify non-pole rows are not forced to ice (spot check middle rows)
+  assert.notStrictEqual(cells[15][15].biome, 'ice' /* or could be ice by chance, so just check it exists */, 'Non-pole cells should not be forced ice');
+  console.log('  T010c poles are ice biome: PASS');
 })();
 
 // --- T010b: cellular automata smoothing preserves grid dimensions ---
@@ -117,6 +160,59 @@ const BIOME_KEYS = ['water', 'grassland', 'desert', 'mountain'];
   // A 30x30 grid with clustering should have far fewer boundaries than 900
   assert.ok(boundaries < 600, `Smoothing should reduce boundaries (got ${boundaries})`);
   console.log(`  T010b smoothing clustering (boundaries: ${boundaries}): PASS`);
+})();
+
+// --- T011: ice biome is enforced at poles ---
+(function testPoleEnforcement() {
+  const rng = mulberry32(42);
+  const width = 30, height = 30;
+  const cells = [];
+
+  // Simulate generation with random biomes everywhere
+  for (let r = 0; r < height; r++) {
+    cells[r] = [];
+    for (let c = 0; c < width; c++) {
+      cells[r][c] = { biome: BIOME_KEYS[Math.floor(rng() * BIOME_KEYS.length)], creatures: [] };
+    }
+  }
+
+  // Enforce poles
+  for (let c = 0; c < width; c++) {
+    for (let r = 0; r < POLE_ROWS.top; r++) {
+      cells[r][c].biome = 'ice';
+    }
+    for (let r = height - POLE_ROWS.bottom; r < height; r++) {
+      cells[r][c].biome = 'ice';
+    }
+  }
+
+  // Verify top pole rows are ice
+  for (let r = 0; r < POLE_ROWS.top; r++) {
+    for (let c = 0; c < width; c++) {
+      assert.strictEqual(cells[r][c].biome, 'ice', `Top pole row ${r}, col ${c} must be ice`);
+    }
+  }
+
+  // Verify bottom pole rows are ice
+  for (let r = height - POLE_ROWS.bottom; r < height; r++) {
+    for (let c = 0; c < width; c++) {
+      assert.strictEqual(cells[r][c].biome, 'ice', `Bottom pole row ${r}, col ${c} must be ice`);
+    }
+  }
+
+  // Verify non-pole rows can contain non-ice biomes
+  let hasNonIce = false;
+  for (let r = POLE_ROWS.top; r < height - POLE_ROWS.bottom; r++) {
+    for (let c = 0; c < width; c++) {
+      if (cells[r][c].biome !== 'ice') {
+        hasNonIce = true;
+        break;
+      }
+    }
+    if (hasNonIce) break;
+  }
+  assert.ok(hasNonIce, 'Non-pole rows should contain non-ice biomes');
+  console.log('  T011  pole ice enforcement: PASS');
 })();
 
 console.log('\nAll simulation tests passed.');

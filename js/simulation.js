@@ -2,13 +2,19 @@
 
 // --- BIOMES Configuration ---
 const BIOMES = {
-  water:     { emoji: '🌊', color: '#4A90D9', creature: '🐟', creatureName: 'fish' },
-  grassland: { emoji: '🌿', color: '#7CB342', creature: '🐄', creatureName: 'cow' },
-  desert:    { emoji: '🏜️', color: '#E8B84D', creature: '🐪', creatureName: 'camel' },
-  mountain:  { emoji: '🏔️', color: '#8D6E63', creature: '🐐', creatureName: 'goat' },
+  water:     { emoji: '🌊', color: '#4A90D9', creature: '🐟', creatureName: 'fish', landmark: null },
+  grassland: { emoji: '🌿', color: '#7CB342', creature: '🐄', creatureName: 'cow', landmark: null },
+  desert:    { emoji: '🏜️', color: '#E8B84D', creature: '🐪', creatureName: 'camel', landmark: null },
+  mountain:  { emoji: '🏔️', color: '#8D6E63', creature: '🐐', creatureName: 'goat', landmark: '🏔️' },
+  forest:    { emoji: '🌲', color: '#2E7D32', creature: '🦌', creatureName: 'deer', landmark: '🌲' },
+  jungle:    { emoji: '🌴', color: '#1B5E20', creature: '🦜', creatureName: 'parrot', landmark: '🌴' },
+  ice:       { emoji: '❄️', color: '#E0F7FA', creature: '🐧', creatureName: 'penguin', landmark: null },
 };
 
 const BIOME_KEYS = Object.keys(BIOMES);
+
+// Pole rows (top and bottom) — ice biome is forced here
+const POLE_ROWS = { top: 3, bottom: 3 }; // Number of rows at each pole
 
 // --- SimulationState ---
 const state = {
@@ -43,14 +49,34 @@ function generatePlanet() {
   for (let r = 0; r < height; r++) {
     state.grid.cells[r] = [];
     for (let c = 0; c < width; c++) {
-      const biome = BIOME_KEYS[Math.floor(rng() * BIOME_KEYS.length)];
-      state.grid.cells[r][c] = { biome, creatures: [] };
+      // Force ice at poles
+      if (r < POLE_ROWS.top || r >= height - POLE_ROWS.bottom) {
+        state.grid.cells[r][c] = { biome: 'ice', creatures: [] };
+      } else {
+        const biome = BIOME_KEYS[Math.floor(rng() * BIOME_KEYS.length)];
+        state.grid.cells[r][c] = { biome, creatures: [] };
+      }
     }
   }
 
-  // Step 2: Cellular automata smoothing — 3 passes
+  // Step 2: Cellular automata smoothing — 3 passes (preserve poles)
   for (let pass = 0; pass < 3; pass++) {
     smoothGrid();
+  }
+
+  // Step 3: Re-enforce ice at poles after smoothing
+  enforcePoles();
+}
+
+function enforcePoles() {
+  const { cells, width, height } = state.grid;
+  for (let c = 0; c < width; c++) {
+    for (let r = 0; r < POLE_ROWS.top; r++) {
+      cells[r][c].biome = 'ice';
+    }
+    for (let r = height - POLE_ROWS.bottom; r < height; r++) {
+      cells[r][c].biome = 'ice';
+    }
   }
 }
 

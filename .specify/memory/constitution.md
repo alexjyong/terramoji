@@ -1,13 +1,10 @@
 <!--
 Sync Impact Report:
-- Version change: N/A → 1.0.0 (initial ratification)
-- Modified principles: N/A (initial creation)
-- Added sections: Core Principles (5 principles), Technical Constraints, Development Workflow, Governance
-- Removed sections: N/A
-- Templates requiring updates:
-  - .specify/templates/plan-template.md: ✅ compatible (Constitution Check gate will reference principles)
-  - .specify/templates/spec-template.md: ✅ compatible (scope constraints align with simplicity principle)
-  - .specify/templates/tasks-template.md: ✅ compatible (phased delivery aligns with incremental scope principle)
+- Version change: 1.1.0 → 1.2.0 (minor: landmark entities added, biome count expanded to 7)
+- Modified principles: II. Emoji-First Graphics (Entities) + CSS Terrain — landmark concept added
+- Added sections: None
+- Removed sections: None
+- Templates requiring updates: N/A
 - Follow-up TODOs: None
 -->
 
@@ -21,11 +18,17 @@ The first pass is a basic proof of concept. Features are scoped to the minimum v
 
 **Why**: A focused MVP prevents scope creep and delivers a playable prototype quickly. Complexity can be layered in subsequent iterations.
 
-### II. Emoji-First Graphics
+### II. Emoji-First Graphics (Entities) + CSS Terrain
 
-All visual entities — terrain, creatures, cities, vehicles — are rendered using emoji characters. No external image assets, no sprite sheets, no canvas drawing for entity representation. Emoji are the visual language of this game. CSS styling and positioning provide motion and layout; emoji provide identity.
+Visual rendering is split into two tiers:
 
-**Why**: Emoji eliminate asset pipeline complexity, ensure cross-platform readability, and match the project's playful aesthetic. This constraint keeps the first pass self-contained.
+- **Entities** (creatures, cities, vehicles, discrete objects) are rendered using emoji characters. Emoji provide identity and readability for all interactive or movable game objects.
+- **Landmarks** are permanent emoji displayed on specific biome tiles regardless of creature presence. Mountain tiles show 🏔️, forest tiles show 🌲, jungle tiles show 🌴. Landmarks are treated as entities — they are emoji, not terrain.
+- **Base terrain/biome tiles** are rendered using CSS gradients, patterns, and textures. No external image assets, no sprite sheets, no canvas drawing for terrain. CSS provides color, subtle texture, and visual distinction between biomes (e.g., ocean waves, ice frost, desert sand).
+
+No external assets of any kind — all visuals are emoji + CSS. This constraint keeps the project self-contained and eliminates asset pipeline complexity. Emoji match the playful aesthetic for entities; CSS provides richer, less repetitive terrain visuals.
+
+**Why**: Repeated emoji on every terrain tile (e.g., 🌊 on every ocean cell) creates visual noise. CSS gradients and patterns provide depth and texture without external dependencies. Landmarks (mountain, forest, jungle) are the exception — their emoji identity is load-bearing for biome recognition.
 
 ### III. Simulation Integrity
 
@@ -88,4 +91,4 @@ This constitution supersedes all other development practices for the Emoji Earth
 
 **Compliance**: Every PR and feature plan MUST reference applicable constitution principles. The plan template's Constitution Check gate enforces this.
 
-**Version**: 1.0.0 | **Ratified**: 2026-04-24 | **Last Amended**: 2026-04-24
+**Version**: 1.2.0 | **Ratified**: 2026-04-24 | **Last Amended**: 2026-04-26

@@ -1,11 +1,15 @@
 # Implementation Plan: Planet MVP
 
-**Branch**: `001-planet-mvp` | **Date**: 2026-04-24 | **Spec**: [spec.md](./spec.md)
+**Branch**: `001-planet-mvp` | **Date**: 2026-04-24 | **Last Updated**: 2026-04-25
+**Spec**: [spec.md](./spec.md)
 **Input**: Feature specification from `/specs/001-planet-mvp/spec.md`
+
+**Amendment**: 2026-04-25 — Constitution v1.1.0: base terrain rendered via CSS gradients/textures, emoji reserved for entities. Added ice biome with pole enforcement.
+**Amendment**: 2026-04-26 — Added forest and jungle biomes (7 total). Mountain/forest/jungle tiles display landmark emoji (🏔️/🌲/🌴) as permanent entities.
 
 ## Summary
 
-Build a browser-based SimEarth-inspired prototype: a 30×30 grid of emoji terrain tiles that can be procedurally generated, manually edited via a toolbar, and populated with emoji creatures that move on a tick-based simulation. Vanilla JavaScript, CSS Grid rendering, zero external dependencies.
+Build a browser-based SimEarth-inspired prototype: a 30×30 grid of terrain tiles (rendered via CSS gradients/textures) that can be procedurally generated, manually edited via a toolbar, and populated with emoji creatures that move on a tick-based simulation. Mountain/forest/jungle tiles display landmark emoji (🏔️/🌲/🌴). Vanilla JavaScript, CSS Grid rendering, zero external dependencies. Ice biome enforced at polar rows. 7 biome types total.
 
 ## Technical Context
 
@@ -26,12 +30,12 @@ Build a browser-based SimEarth-inspired prototype: a 30×30 grid of emoji terrai
 | Principle | Compliance | Status |
 |-----------|-----------|--------|
 | I. Simplicity First | 3 user stories, no save/load, no networking, no complex AI | ✅ Pass |
-| II. Emoji-First Graphics | All visuals are emoji + CSS, no images/sprites/canvas | ✅ Pass |
+| II. Emoji-First Graphics (Entities) + CSS Terrain | Entities (creatures) use emoji; base terrain uses CSS gradients/textures; no external assets | ✅ Pass (v1.1.0) |
 | III. Simulation Integrity | Tick-based, deterministic seed, synchronous updates | ✅ Pass |
 | IV. Interactive by Default | Toolbar placement + click-to-change, one-level UI | ✅ Pass |
 | V. Incremental Scope | Vertical slices: generate → place → creatures | ✅ Pass |
 
-**Verdict**: All gates pass. No violations to justify.
+**Verdict**: All gates pass. No violations to justify. Constitution v1.1.0.
 
 ## Project Structure
 

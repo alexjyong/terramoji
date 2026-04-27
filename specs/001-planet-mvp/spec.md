@@ -2,24 +2,29 @@
 
 **Feature Branch**: `001-planet-mvp`
 **Created**: 2026-04-24
-**Status**: Draft
+**Last Updated**: 2026-04-25
+**Status**: In Progress
 **Input**: User description: "SimEarth-inspired emoji game MVP — generate planet grid, place biomes via toolbar, creatures appear and move"
+
+**Amendment Log**:
+- 2026-04-25: Added ice biome (constitution v1.1.0), switched base terrain to CSS gradients/textures (emoji reserved for entities only), added pole enforcement
+- 2026-04-26: Added forest and jungle biomes; mountain tiles display 🏔️ landmark emoji; forest/jungle tiles display tree emoji (🌲/🌴) as permanent landmark; toolbar expanded to 7 biomes
 
 ## User Scenarios & Testing
 
 ### User Story 1 - Generate & Display a Planet (Priority: P1)
 
-On page load or clicking "New Planet," the player sees a grid of emoji terrain tiles representing a procedurally generated planet.
+On page load or clicking "New Planet," the player sees a grid of CSS-styled terrain tiles representing a procedurally generated planet. Mountain tiles display 🏔️ landmark emoji, forest tiles display 🌲, and jungle tiles display 🌴.
 
 **Why this priority**: Without a visible planet, there is nothing to interact with. This is the foundation of the entire experience.
 
-**Independent Test**: Load the page → click "New Planet" → verify a grid of emoji tiles appears.
+**Independent Test**: Load the page → click "New Planet" → verify a grid of styled terrain tiles appears with landmark emoji on mountain/forest/jungle tiles.
 
 **Acceptance Scenarios**:
 
-1. **Given** the page loads, **When** the player clicks "New Planet", **Then** a grid of emoji terrain tiles is displayed
+1. **Given** the page loads, **When** the player clicks "New Planet", **Then** a grid of CSS-styled terrain tiles is displayed
 2. **Given** a planet is displayed, **When** the player clicks "New Planet" again, **Then** a different random planet is generated
-3. **Given** a planet is displayed, **When** the player inspects the grid, **Then** multiple biome types are visible (water, grassland, desert, mountain)
+3. **Given** a planet is displayed, **When** the player inspects the grid, **Then** multiple biome types are visible (water, grassland, desert, mountain with 🏔️, forest with 🌲, jungle with 🌴, ice at poles)
 
 ---
 
@@ -53,6 +58,9 @@ After terrain is placed, matching creatures spawn on compatible biomes and move 
 2. **Given** creatures are present, **When** a simulation tick passes, **Then** creatures move to adjacent compatible biome tiles
 3. **Given** a water biome exists, **When** the simulation runs, **Then** aquatic creatures (🐟) spawn on water tiles
 4. **Given** a desert biome exists, **When** the simulation runs, **Then** desert creatures (🐪) spawn on desert tiles
+5. **Given** ice biomes exist at poles, **When** the simulation runs, **Then** ice creatures (🐧) spawn on ice tiles
+6. **Given** a forest biome exists, **When** the simulation runs, **Then** forest creatures (🦌) spawn on forest tiles
+7. **Given** a jungle biome exists, **When** the simulation runs, **Then** jungle creatures (🦜) spawn on jungle tiles
 
 ---
 
@@ -67,8 +75,8 @@ After terrain is placed, matching creatures spawn on compatible biomes and move 
 ### Functional Requirements
 
 - **FR-001**: System MUST generate a procedurally seeded grid of terrain tiles on demand
-- **FR-002**: System MUST display terrain using emoji characters (🌊 water, 🌿 grassland, 🏜️ desert, 🏔️ mountain)
-- **FR-003**: System MUST provide a toolbar with at least 4 biome types for player selection
+- **FR-002**: System MUST display terrain using CSS gradients and textures for base biomes (water, grassland, desert, mountain, forest, jungle, ice). Mountain tiles display 🏔️ landmark emoji, forest tiles display 🌲, jungle tiles display 🌴. Ice biome is enforced at top and bottom pole rows.
+- **FR-003**: System MUST provide a toolbar with 7 biome types for player selection
 - **FR-004**: System MUST allow the player to change any grid square's biome by clicking after toolbar selection
 - **FR-005**: System MUST spawn creatures matching the biome type when terrain is placed or on initial generation
 - **FR-006**: System MUST advance creature positions on a periodic tick (default: 1 second)
