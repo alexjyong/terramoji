@@ -1,4 +1,4 @@
-# Quickstart: Emoji Earth
+# Quickstart: Terramoji
 
 ## Prerequisites
 

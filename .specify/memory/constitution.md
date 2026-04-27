@@ -8,7 +8,7 @@ Sync Impact Report:
 - Follow-up TODOs: None
 -->
 
-# Emoji Earth Constitution
+# Terramoji Constitution
 
 ## Core Principles
 
@@ -76,7 +76,7 @@ Features are delivered in vertical slices: terrain generation ships with biome p
 
 ## Governance
 
-This constitution supersedes all other development practices for the Emoji Earth project. No feature, tool, or pattern is adopted that violates the core principles without an explicit amendment.
+This constitution supersedes all other development practices for the Terramoji project. No feature, tool, or pattern is adopted that violates the core principles without an explicit amendment.
 
 **Amendments**: Constitution changes require:
 1. A proposed change describing the modification and rationale

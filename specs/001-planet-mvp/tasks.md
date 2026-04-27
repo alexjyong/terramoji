@@ -6,6 +6,7 @@
 
 **Amendment**: 2026-04-25 — Constitution v1.1.0: base terrain via CSS gradients/textures, emoji for entities only. Added ice biome (T006 updated to 5 types), pole enforcement (T011 updated), renderer no longer places emoji on base terrain (T012 updated).
 **Amendment**: 2026-04-26 — Added forest and jungle biomes (7 total, T006 updated). Mountain/forest/jungle tiles display landmark emoji (🏔️/🌲/🌴) as permanent entities. Toolbar buttons expanded to 7 biomes (T016 updated).
+**Amendment**: 2026-04-27 — Added User Story 2.5 (Inspect Tile Details, Phase 4.5) with floating tooltip showing biome/creature/civilization info. Added `civilization` field placeholder to cell data model (T038).
 
 **Tests**: Included — constitution mandates test-first for simulation logic.
 
@@ -23,10 +24,10 @@
 
 **Purpose**: Project initialization and basic structure
 
-- [ ] T001 Create project directory structure (css/, js/, tests/) per implementation plan
-- [ ] T002 [P] Create index.html with basic HTML5 skeleton, toolbar container, grid container, script tags in index.html
-- [ ] T003 [P] Create css/game.css with base reset and page layout styles
-- [ ] T004 [P] Create js/simulation.js, js/renderer.js, js/input.js as empty modules
+- [x] T001 Create project directory structure (css/, js/, tests/) per implementation plan
+- [x] T002 [P] Create index.html with basic HTML5 skeleton, toolbar container, grid container, script tags in index.html
+- [x] T003 [P] Create css/game.css with base reset and page layout styles
+- [x] T004 [P] Create js/simulation.js, js/renderer.js, js/input.js as empty modules
 
 ---
 
@@ -36,10 +37,10 @@
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T005 Implement mulberry32 PRNG function in js/simulation.js
-- [ ] T006 Define BIOMES configuration object (7 types: water, grassland, desert, mountain, forest, jungle, ice — each with emoji, color, creature, and landmark mappings) in js/simulation.js
-- [ ] T007 Initialize SimulationState object structure (grid, tick, selectedBiome, isRunning) in js/simulation.js
-- [ ] T008 Create render() stub function that reads SimulationState and updates DOM in js/renderer.js
+- [x] T005 Implement mulberry32 PRNG function in js/simulation.js
+- [x] T006 Define BIOMES configuration object (7 types: water, grassland, desert, mountain, forest, jungle, ice — each with emoji, color, creature, and landmark mappings) in js/simulation.js
+- [x] T007 Initialize SimulationState object structure (grid, tick, selectedBiome, isRunning) in js/simulation.js
+- [x] T008 Create render() stub function that reads SimulationState and updates DOM in js/renderer.js
 
 **Checkpoint**: Foundation ready — user story implementation can now begin
 
@@ -55,16 +56,16 @@
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [ ] T009 [P] [US1] Test mulberry32 PRNG produces deterministic sequences in tests/test_simulation.js
-- [ ] T010 [P] [US1] Test terrain generation creates 30×30 grid with all 7 biome types, ice enforced at poles, and smoothing preserves grid in tests/test_simulation.js
+- [x] T009 [P] [US1] Test mulberry32 PRNG produces deterministic sequences in tests/test_simulation.js
+- [x] T010 [P] [US1] Test terrain generation creates 30×30 grid with all 7 biome types, ice enforced at poles, and smoothing preserves grid in tests/test_simulation.js
 
 ### Implementation for User Story 1
 
-- [ ] T011 [US1] Implement generatePlanet() function: seed PRNG, fill grid with random biomes (ice forced at pole rows), apply 2-3 cellular automata smoothing passes, re-enforce poles in js/simulation.js
-- [ ] T012 [US1] Implement renderGrid() function: create 30×30 CSS Grid of div cells with `data-biome` attribute for CSS styling; landmark emoji displayed on mountain/forest/jungle tiles; creature emoji only displayed when creatures present (no emoji on base terrain for other biomes) in js/renderer.js
-- [ ] T013 [US1] Add "🌍 New Planet" button to toolbar container in index.html
-- [ ] T014 [US1] Wire "New Planet" button click handler: call generatePlanet() then renderGrid() in js/input.js
-- [ ] T015 [US1] Add CSS Grid layout styles for 30×30 grid with biome-specific CSS gradient backgrounds and pseudo-element textures in css/game.css
+- [x] T011 [US1] Implement generatePlanet() function: seed PRNG, fill grid with random biomes (ice forced at pole rows), apply 2-3 cellular automata smoothing passes, re-enforce poles in js/simulation.js
+- [x] T012 [US1] Implement renderGrid() function: create 30×30 CSS Grid of div cells with `data-biome` attribute for CSS styling; landmark emoji displayed on mountain/forest/jungle tiles; creature emoji only displayed when creatures present (no emoji on base terrain for other biomes) in js/renderer.js
+- [x] T013 [US1] Add "🌍 New Planet" button to toolbar container in index.html
+- [x] T014 [US1] Wire "New Planet" button click handler: call generatePlanet() then renderGrid() in js/input.js
+- [x] T015 [US1] Add CSS Grid layout styles for 30×30 grid with biome-specific CSS gradient backgrounds and pseudo-element textures in css/game.css
 
 **Checkpoint**: At this point, User Story 1 should be fully functional — player can generate and see a planet
 
@@ -85,6 +86,26 @@
 - [ ] T020 [US2] Wire biome change to call renderGrid() for updated display in js/input.js
 
 **Checkpoint**: At this point, player can generate a planet AND manually edit terrain
+
+---
+
+## Phase 4.5: User Story 2.5 — Inspect Tile Details (Priority: P2.5) 🔍
+
+**Goal:** Player selects the magnifying glass tool and clicks any tile to see its biome name, creature type, and civilization type in a floating popup near the tile
+
+**Independent Test:** Generate planet → select 🔍 Inspect → click tile → floating popup appears showing biome name + emoji, creature info (if any), civilization info (if any)
+
+### Implementation for User Story 2.5
+
+- [ ] T034 [P] [US2.5] Add "🔍 Inspect" button to toolbar in `index.html`
+- [ ] T035 [P] [US2.5] Add floating tooltip popup container and styles (positioned near clicked tile, dismisses on next click or Escape) in `css/game.css`
+- [ ] T036 [US2.5] Implement inspect tool mode: toggle on/off, deselect edit tool when active, update toolbar visual state in `js/input.js`
+- [ ] T037 [US2.5] Wire grid cell click handler for inspect mode: read cell biome/creature/civilization data, populate and position floating tooltip in `js/renderer.js` + `js/input.js`
+- [ ] T038 [US2.5] Add `civilization` field to cell data model (nullable placeholder for future expansion — currently null for all tiles) in `js/simulation.js`
+
+> **Note:** "Civilization" is a forward-looking field. It is `null` today but will support villages, cities, ruins, etc. in later milestones. The tooltip shows it only when present.
+
+**Checkpoint**: Player can now generate, edit, AND inspect tiles — full read-write-understand loop
 
 ---
 
@@ -141,6 +162,7 @@
 
 - **User Story 1 (P1)**: Can start after Foundational (Phase 2) — No dependencies on other stories
 - **User Story 2 (P2)**: Can start after Foundational (Phase 2) — Depends on US1 renderGrid() function
+- **User Story 2.5 (P2.5)**: Can start after US2 toolbar wiring — Depends on US1 generatePlanet() and US2 tool mode logic
 - **User Story 3 (P3)**: Can start after Foundational (Phase 2) — Depends on US1 generatePlanet() and US2 biome change logic
 
 ### Parallel Opportunities
@@ -166,8 +188,9 @@
 1. Complete Setup + Foundational → Foundation ready
 2. Add User Story 1 → Generate planet works → **MVP!**
 3. Add User Story 2 → Edit terrain works → Interactive
-4. Add User Story 3 → Creatures move → Living simulation
-5. Each story adds value without breaking previous stories
+4. Add User Story 2.5 → Inspect tiles works → Read-write-understand loop
+5. Add User Story 3 → Creatures move → Living simulation
+6. Each story adds value without breaking previous stories
 
 ---
 

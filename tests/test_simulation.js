@@ -1,4 +1,4 @@
-// Emoji Earth — Simulation Tests
+// Terramoji — Simulation Tests
 const assert = require('assert');
 
 // --- Load simulation logic (simulated for Node.js) ---
