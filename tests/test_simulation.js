@@ -41,10 +41,11 @@ const POLE_ROWS = { top: 3, bottom: 3 };
 
 // --- T010: terrain generation creates 30x30 grid with all 7 biomes ---
 (function testGeneratePlanet() {
-  // Simulate generation
+  // Simulate generation (mirrors fixed simulation.js: ice excluded from non-pole rows)
   const rng = mulberry32(12345);
   const width = 30, height = 30;
   const cells = [];
+  const nonPoleBiomes = BIOME_KEYS.filter(b => b !== 'ice');
   for (let r = 0; r < height; r++) {
     cells[r] = [];
     for (let c = 0; c < width; c++) {
@@ -52,7 +53,7 @@ const POLE_ROWS = { top: 3, bottom: 3 };
       if (r < POLE_ROWS.top || r >= height - POLE_ROWS.bottom) {
         cells[r][c] = { biome: 'ice', creatures: [] };
       } else {
-        cells[r][c] = { biome: BIOME_KEYS[Math.floor(rng() * BIOME_KEYS.length)], creatures: [] };
+        cells[r][c] = { biome: nonPoleBiomes[Math.floor(rng() * nonPoleBiomes.length)], creatures: [] };
       }
     }
   }
@@ -60,7 +61,7 @@ const POLE_ROWS = { top: 3, bottom: 3 };
   assert.strictEqual(cells.length, 30, 'Grid height must be 30');
   assert.strictEqual(cells[0].length, 30, 'Grid width must be 30');
 
-  // Check all 5 biomes present
+  // Check all 7 biomes present (ice from poles, others from non-pole rows)
   const present = new Set();
   for (let r = 0; r < height; r++) {
     for (let c = 0; c < width; c++) {
@@ -73,18 +74,19 @@ const POLE_ROWS = { top: 3, bottom: 3 };
   console.log('  T010  generatePlanet 30x30 with 7 biomes: PASS');
 })();
 
-// --- T010c: poles are ice biome ---
+// --- T010c: poles are ice biome, non-pole rows contain NO ice ---
 (function testPolesAreIce() {
   const rng = mulberry32(12345);
   const width = 30, height = 30;
   const cells = [];
+  const nonPoleBiomes = BIOME_KEYS.filter(b => b !== 'ice');
   for (let r = 0; r < height; r++) {
     cells[r] = [];
     for (let c = 0; c < width; c++) {
       if (r < POLE_ROWS.top || r >= height - POLE_ROWS.bottom) {
         cells[r][c] = { biome: 'ice', creatures: [] };
       } else {
-        cells[r][c] = { biome: BIOME_KEYS[Math.floor(rng() * BIOME_KEYS.length)], creatures: [] };
+        cells[r][c] = { biome: nonPoleBiomes[Math.floor(rng() * nonPoleBiomes.length)], creatures: [] };
       }
     }
   }
@@ -103,9 +105,13 @@ const POLE_ROWS = { top: 3, bottom: 3 };
     }
   }
 
-  // Verify non-pole rows are not forced to ice (spot check middle rows)
-  assert.notStrictEqual(cells[15][15].biome, 'ice' /* or could be ice by chance, so just check it exists */, 'Non-pole cells should not be forced ice');
-  console.log('  T010c poles are ice biome: PASS');
+  // Verify non-pole rows contain NO ice at all
+  for (let r = POLE_ROWS.top; r < height - POLE_ROWS.bottom; r++) {
+    for (let c = 0; c < width; c++) {
+      assert.notStrictEqual(cells[r][c].biome, 'ice', `Non-pole row ${r}, col ${c} must NOT be ice`);
+    }
+  }
+  console.log('  T010c poles are ice, non-pole rows ice-free: PASS');
 })();
 
 // --- T010b: cellular automata smoothing preserves grid dimensions ---

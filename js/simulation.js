@@ -53,7 +53,8 @@ function generatePlanet() {
       if (r < POLE_ROWS.top || r >= height - POLE_ROWS.bottom) {
         state.grid.cells[r][c] = { biome: 'ice', creatures: [] };
       } else {
-        const biome = BIOME_KEYS[Math.floor(rng() * BIOME_KEYS.length)];
+        const nonPoleBiomes = BIOME_KEYS.filter(b => b !== 'ice');
+        const biome = nonPoleBiomes[Math.floor(rng() * nonPoleBiomes.length)];
         state.grid.cells[r][c] = { biome, creatures: [] };
       }
     }
@@ -66,6 +67,9 @@ function generatePlanet() {
   for (let pass = 0; pass < 3; pass++) {
     smoothGrid();
   }
+
+  // Step 3.5: Re-enforce ice at poles after smoothing (per spec task T011)
+  enforcePoles();
 
   // Step 3.5: Place cacti on ~20% of desert tiles (after smoothing)
   const cells = state.grid.cells;
