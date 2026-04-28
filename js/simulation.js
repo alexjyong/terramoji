@@ -187,6 +187,53 @@ function spawnCreatures() {
   }
 }
 
+// --- T025: moveCreatures ---
+function moveCreatures() {
+  const { cells, width, height } = state.grid;
+
+  // Collect all creatures with their current positions
+  const allCreatures = [];
+  for (let r = 0; r < height; r++) {
+    for (let c = 0; c < width; c++) {
+      allCreatures.push(...cells[r][c].creatures.map(cr => ({ cr, fromR: r, fromC: c })));
+    }
+  }
+
+  // Clear creature arrays (will reassign below)
+  for (let r = 0; r < height; r++) {
+    for (let c = 0; c < width; c++) {
+      cells[r][c].creatures = [];
+    }
+  }
+
+  // 4-directional adjacency (no diagonals)
+  const dirs = [[-1, 0], [1, 0], [0, -1], [0, 1]];
+
+  for (const { cr, fromR, fromC } of allCreatures) {
+    // Pick random adjacent cell
+    const [dr, dc] = dirs[Math.floor(Math.random() * dirs.length)];
+    const nr = fromR + dr;
+    const nc = fromC + dc;
+
+    if (nr >= 0 && nr < height && nc >= 0 && nc < width) {
+      // Only move if destination biome is compatible
+      if (cr.compatibleBiomes.includes(cells[nr][nc].biome)) {
+        cr.row = nr;
+        cr.col = nc;
+        cells[nr][nc].creatures.push(cr);
+      } else {
+        // Stay in place
+        cr.row = fromR;
+        cr.col = fromC;
+        cells[fromR][fromC].creatures.push(cr);
+      }
+    } else {
+      // Out of bounds — stay
+      cells[fromR][fromC].creatures.push(cr);
+    }
+  }
+}
+
 // --- Tick Loop (T026/T027) ---
 // TODO: Implement tick() function that:
 //   1. Returns early if state.isPaused is true (per data-model.md: "skipped when isPaused is true")
