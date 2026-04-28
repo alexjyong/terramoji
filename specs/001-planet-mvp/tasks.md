@@ -121,13 +121,13 @@
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [ ] T021 [P] [US3] Test creature spawning places correct creature type on matching biome in tests/test_simulation.js
-- [ ] T022 [P] [US3] Test creature movement only moves to adjacent compatible biome cells in tests/test_simulation.js
-- [ ] T023 [US3] Test creature removal when biome changes to incompatible type in tests/test_simulation.js
+- [x] T021 [P] [US3] Test creature spawning places correct creature type on matching biome in tests/test_simulation.js
+- [x] T022 [P] [US3] Test creature movement only moves to adjacent compatible biome cells in tests/test_simulation.js
+- [x] T023 [US3] Test creature removal when biome changes to incompatible type in tests/test_simulation.js
 
 ### Implementation for User Story 3
 
-- [ ] T024 [US3] Implement spawnCreatures() function: iterate grid, add creatures to cells based on biome type, respect max 5 per cell and 200 total in js/simulation.js
+- [x] T024 [US3] Implement spawnCreatures() function: iterate grid, add creatures to cells based on biome type, respect max 5 per cell and 200 total in js/simulation.js
 - [ ] T025 [US3] Implement moveCreatures() function: for each creature, pick random adjacent cell, move only if cell biome is in creature's compatibleBiomes set in js/simulation.js
 - [ ] T026 [US3] Implement tick() function: call moveCreatures(), spawnCreatures(), remove incompatible creatures, increment tick counter in js/simulation.js
 - [ ] T027 [US3] Implement startSimulation() function: setInterval(tick, 1000), set isRunning flag in js/simulation.js

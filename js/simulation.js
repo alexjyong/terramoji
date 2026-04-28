@@ -132,6 +132,61 @@ function smoothGrid() {
   state.grid.cells = next;
 }
 
+// --- Creature Configuration (many-to-many biome compatibility) ---
+const CREATURE_TYPES = {
+  fish:    { emoji: '🐟', compatibleBiomes: ['water'] },
+  cow:     { emoji: '🐄', compatibleBiomes: ['grassland', 'forest'] },
+  camel:   { emoji: '🐪', compatibleBiomes: ['desert'] },
+  goat:    { emoji: '🐐', compatibleBiomes: ['mountain', 'grassland'] },
+  deer:    { emoji: '🦌', compatibleBiomes: ['forest', 'grassland'] },
+  parrot:  { emoji: '🦜', compatibleBiomes: ['jungle', 'forest'] },
+  penguin: { emoji: '🐧', compatibleBiomes: ['ice'] },
+};
+
+let creatureIdCounter = 0;
+
+function createCreature(name, row, col) {
+  const ct = CREATURE_TYPES[name];
+  if (!ct) throw new Error(`Unknown creature type: ${name}`);
+  creatureIdCounter++;
+  return { id: `c_${creatureIdCounter}`, emoji: ct.emoji, compatibleBiomes: [...ct.compatibleBiomes], row, col };
+}
+
+function totalCreatures(cells, width, height) {
+  let count = 0;
+  for (let r = 0; r < height; r++) {
+    for (let c = 0; c < width; c++) {
+      count += (cells[r][c].creatures || []).length;
+    }
+  }
+  return count;
+}
+
+// --- T024: spawnCreatures ---
+function spawnCreatures() {
+  const { cells, width, height } = state.grid;
+  const MAX_PER_CELL = 5;
+  const MAX_TOTAL = 200;
+  let total = totalCreatures(cells, width, height);
+
+  for (let r = 0; r < height; r++) {
+    for (let c = 0; c < width; c++) {
+      const cell = cells[r][c];
+      if ((cell.creatures || []).length >= MAX_PER_CELL) continue;
+      if (total >= MAX_TOTAL) return;
+
+      // Find a creature type compatible with this biome
+      for (const [name, ct] of Object.entries(CREATURE_TYPES)) {
+        if (ct.compatibleBiomes.includes(cell.biome)) {
+          cell.creatures.push(createCreature(name, r, c));
+          total++;
+          break; // one spawn per cell per pass
+        }
+      }
+    }
+  }
+}
+
 // --- Tick Loop (T026/T027) ---
 // TODO: Implement tick() function that:
 //   1. Returns early if state.isPaused is true (per data-model.md: "skipped when isPaused is true")
