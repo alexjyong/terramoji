@@ -13,6 +13,7 @@
     <nav id="toolbar">
       <button id="btn-new-planet">🌍 New Planet</button>
       <button id="btn-pause">⏸️ Pause</button>
+      <button id="btn-inspect" title="Inspect tile">🔍 Inspect</button>
       <div class="biome-buttons">
         <button data-biome="water" title="Water">🌊</button>
         <button data-biome="grassland" title="Grassland">🌿</button>
@@ -26,6 +27,7 @@
   </header>
   <main>
     <div id="grid"></div>
+    <div id="inspect-tooltip" class="inspect-tooltip hidden"></div>
   </main>
   <script src="js/simulation.js"></script>
   <script src="js/renderer.js"></script>

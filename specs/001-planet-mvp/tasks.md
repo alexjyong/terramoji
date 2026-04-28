@@ -99,13 +99,13 @@
 
 ### Implementation for User Story 2.5
 
-- [ ] T034 [P] [US2.5] Add "🔍 Inspect" button to toolbar in `index.html`
-- [ ] T035 [P] [US2.5] Add floating tooltip popup container and styles (positioned near clicked tile, dismisses on next click or Escape) in `css/game.css`
-- [ ] T036 [US2.5] Implement inspect tool mode: toggle on/off, deselect edit tool when active, update toolbar visual state in `js/input.js`
-- [ ] T037 [US2.5] Wire grid cell click handler for inspect mode: read cell biome/creature/civilization data, populate and position floating tooltip in `js/renderer.js` + `js/input.js`
-- [ ] T038 [US2.5] Add `civilization` field to cell data model (nullable placeholder for future expansion — currently null for all tiles) in `js/simulation.js`
+- [x] T034 [P] [US2.5] Add "🔍 Inspect" button to toolbar in `index.html`
+- [x] T035 [P] [US2.5] Add floating tooltip popup container and styles (positioned near clicked tile, dismisses on next click or Escape) in `css/game.css`
+- [x] T036 [US2.5] Implement inspect tool mode: toggle on/off, deselect edit tool when active, update toolbar visual state in `js/input.js`
+- [x] T037 [US2.5] Wire grid cell click handler for inspect mode: read cell biome/creature/civilization data, populate and position floating tooltip in `js/renderer.js` + `js/input.js`
+- [x] T038 [US2.5] Add `civilization` field to cell data model (nullable placeholder for future expansion — currently null for all tiles) in `js/simulation.js`
 
-> **Note:** "Civilization" is a forward-looking field. It is `null` today but will support villages, cities, ruins, etc. in later milestones. The tooltip shows it only when present.
+> **Note:** "Civilization" is a forward-looking field. It is `null` today but will support villages, cities, ruins, etc. in later milestones.
 
 **Checkpoint**: Player can now generate, edit, AND inspect tiles — full read-write-understand loop
 

@@ -21,6 +21,7 @@ const state = {
   grid: { width: 30, height: 30, cells: [] },
   tick: 0,
   selectedBiome: null,
+  inspectMode: false,
   isRunning: false,
   isPaused: false,
 };
@@ -53,11 +54,11 @@ function generatePlanet() {
     for (let c = 0; c < width; c++) {
       // Force ice at poles
       if (r < POLE_ROWS.top || r >= height - POLE_ROWS.bottom) {
-        state.grid.cells[r][c] = { biome: 'ice', creatures: [] };
+        state.grid.cells[r][c] = { biome: 'ice', creatures: [], civilization: null };
       } else {
         const nonPoleBiomes = BIOME_KEYS.filter(b => b !== 'ice');
         const biome = nonPoleBiomes[Math.floor(rng() * nonPoleBiomes.length)];
-        state.grid.cells[r][c] = { biome, creatures: [] };
+        state.grid.cells[r][c] = { biome, creatures: [], civilization: null };
       }
     }
   }
@@ -124,7 +125,7 @@ function smoothGrid() {
           dominant = b;
         }
       }
-      next[r][c] = { biome: dominant, creatures: [] };
+      next[r][c] = { biome: dominant, creatures: [], civilization: null };
     }
   }
 

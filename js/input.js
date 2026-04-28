@@ -27,7 +27,10 @@ document.querySelectorAll('.biome-buttons button').forEach((button) => {
   button.addEventListener('click', () => {
     const biome = button.dataset.biome;
     state.selectedBiome = biome;
+    state.inspectMode = false;
+    updateInspectButton();
     updateBiomeButtonSelection();
+    hideTooltip();
   });
 });
 
@@ -41,6 +44,38 @@ function updateBiomeButtonSelection() {
   });
 }
 
+// --- Inspect Tool Mode (T036) ---
+
+const inspectBtn = document.getElementById('btn-inspect');
+
+inspectBtn.addEventListener('click', () => {
+  state.inspectMode = !state.inspectMode;
+
+  // Deselect edit tool when inspect is active
+  if (state.inspectMode) {
+    state.selectedBiome = null;
+    updateBiomeButtonSelection();
+  }
+
+  updateInspectButton();
+  hideTooltip();
+});
+
+function updateInspectButton() {
+  if (state.inspectMode) {
+    inspectBtn.classList.add('active');
+  } else {
+    inspectBtn.classList.remove('active');
+  }
+}
+
+// Dismiss tooltip on Escape
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    hideTooltip();
+  }
+});
+
 // --- Grid Cell Click Handler (T019b) + Drag-to-Paint (T020b) ---
 
 let isPainting = false;
@@ -48,7 +83,17 @@ let renderPending = false;
 
 gridEl.addEventListener('mousedown', (e) => {
   const cellDiv = e.target.closest('.cell');
-  if (!cellDiv || !state.selectedBiome) return;
+  if (!cellDiv) return;
+
+  // Inspect mode (T037) — show tooltip, skip painting
+  if (state.inspectMode) {
+    const row = parseInt(cellDiv.dataset.row, 10);
+    const col = parseInt(cellDiv.dataset.col, 10);
+    showInspectTooltip(row, col, cellDiv);
+    return;
+  }
+
+  if (!state.selectedBiome) return;
   isPainting = true;
   paintCell(cellDiv);
 });
