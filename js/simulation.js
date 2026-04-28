@@ -167,7 +167,7 @@ function spawnCreatures() {
   const { cells, width, height } = state.grid;
   const MAX_PER_CELL = 5;
   const MAX_TOTAL = 200;
-  const MAX_PER_BIOME = 40; // distribute creatures across biomes so poles don't dominate
+  const MAX_PER_BIOME = 35; // distribute creatures across biomes evenly
   let total = totalCreatures(cells, width, height);
 
   // Count per-biome to cap each biome's share
@@ -179,21 +179,49 @@ function spawnCreatures() {
     }
   }
 
+  // Collect all eligible cells, grouped by biome — then interleave biomes evenly
+  const biomeCells = {};
   for (let r = 0; r < height; r++) {
     for (let c = 0; c < width; c++) {
       const cell = cells[r][c];
       if ((cell.creatures || []).length >= MAX_PER_CELL) continue;
-      if (total >= MAX_TOTAL) return;
-      if ((biomeCounts[cell.biome] || 0) >= MAX_PER_BIOME) continue;
+      const b = cell.biome;
+      if (!biomeCells[b]) biomeCells[b] = [];
+      biomeCells[b].push({ r, c });
+    }
+  }
 
-      // Find a creature type compatible with this biome
-      for (const [name, ct] of Object.entries(CREATURE_TYPES)) {
-        if (ct.compatibleBiomes.includes(cell.biome)) {
-          cell.creatures.push(createCreature(name, r, c));
-          total++;
-          biomeCounts[cell.biome] = (biomeCounts[cell.biome] || 0) + 1;
-          break; // one spawn per cell per pass
-        }
+  // Interleave: pick one cell from each biome in round-robin until all are processed
+  const ordered = [];
+  const biomeList = Object.keys(biomeCells);
+  let biomesLeft = biomeList.length;
+  while (biomesLeft > 0) {
+    for (let i = biomeList.length - 1; i >= 0; i--) {
+      const b = biomeList[i];
+      const bucket = biomeCells[b];
+      if (bucket.length > 0) {
+        // Pick random cell from this biome's bucket
+        const idx = Math.floor(Math.random() * bucket.length);
+        ordered.push({ ...bucket.splice(idx, 1)[0], biome: b });
+      } else {
+        biomeList.splice(i, 1);
+        biomesLeft--;
+      }
+    }
+  }
+
+  // Spawn creatures in interleaved order
+  for (const { r, c, biome } of ordered) {
+    if (total >= MAX_TOTAL) break;
+    if ((biomeCounts[biome] || 0) >= MAX_PER_BIOME) continue;
+
+    const cell = cells[r][c];
+    for (const [name, ct] of Object.entries(CREATURE_TYPES)) {
+      if (ct.compatibleBiomes.includes(cell.biome)) {
+        cell.creatures.push(createCreature(name, r, c));
+        total++;
+        biomeCounts[biome] = (biomeCounts[biome] || 0) + 1;
+        break;
       }
     }
   }
