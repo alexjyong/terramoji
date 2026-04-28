@@ -4,7 +4,7 @@
 
 TerraMoji is a SimEarth-inspired emoji planet simulation. Generate a random world, paint biomes with your mouse, watch creatures spawn and wander across terrain — all rendered as emoji on a 30×30 grid.
 
-**This entire project was designed and implemented with [Qwen Code](https://qwen.ai) (Qwen3-2.6-27B) using the [Spec Kit](https://github.com/qwenlm/spec-kit) workflow.** The goal is to demonstrate that a local LLM, guided by structured specification workflows, can take a one-line idea and produce a working, tested, multi-feature application — no human coding required.
+**This entire project was designed and implemented with [Qwen Code](https://qwen.ai) (Qwen3-2.6-27B) using the [Spec Kit](https://github.com/qwenlm/spec-kit) workflow.** The goal is to demonstrate that a local LLM, guided by structured specification workflows, can take a well defined idea and produce a working, tested, multi-feature application.
 
 ---
 
