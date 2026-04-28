@@ -1,7 +1,10 @@
 // TerraMoji — Input Handling
 
 document.getElementById('btn-new-planet').addEventListener('click', () => {
+  creatureIdCounter = 0;
   generatePlanet();
+  spawnCreatures();
+  startSimulation();
   state.isPaused = false;
   updatePauseButton();
   renderGrid();

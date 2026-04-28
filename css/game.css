@@ -82,6 +82,18 @@ h1 {
   outline-offset: -2px;
 }
 
+/* --- Creature overlay on landmark tiles --- */
+
+.creature-overlay {
+  position: absolute;
+  bottom: 1px;
+  right: 1px;
+  font-size: 10px;
+  line-height: 1;
+  pointer-events: none;
+  z-index: 2;
+}
+
 /* --- Biome Terrain Styles (CSS gradients + textures) --- */
 
 .cell::before {

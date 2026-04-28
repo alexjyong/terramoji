@@ -129,10 +129,10 @@
 
 - [x] T024 [US3] Implement spawnCreatures() function: iterate grid, add creatures to cells based on biome type, respect max 5 per cell and 200 total in js/simulation.js
 - [x] T025 [US3] Implement moveCreatures() function: for each creature, pick random adjacent cell, move only if cell biome is in creature's compatibleBiomes set in js/simulation.js
-- [ ] T026 [US3] Implement tick() function: call moveCreatures(), spawnCreatures(), remove incompatible creatures, increment tick counter in js/simulation.js
-- [ ] T027 [US3] Implement startSimulation() function: setInterval(tick, 1000), set isRunning flag in js/simulation.js
-- [ ] T028 [US3] Call spawnCreatures() and startSimulation() after generatePlanet() completes in js/input.js
-- [ ] T029 [US3] Update renderGrid() to display creature emoji(s) within each cell div on top of CSS terrain; landmark emoji on mountain/forest/jungle tiles; no base terrain emoji for other biomes, only creature entities in js/renderer.js
+- [x] T026 [US3] Implement tick() function: call moveCreatures(), spawnCreatures(), remove incompatible creatures, increment tick counter in js/simulation.js
+- [x] T027 [US3] Implement startSimulation() function: setInterval(tick, 1000), set isRunning flag in js/simulation.js
+- [x] T028 [US3] Call spawnCreatures() and startSimulation() after generatePlanet() completes in js/input.js
+- [x] T029 [US3] Update renderGrid() to display creature emoji(s) within each cell div on top of CSS terrain; landmark emoji on mountain/forest/jungle tiles; no base terrain emoji for other biomes, only creature entities in js/renderer.js
 
 ### Pause/Resume Control (FR-012)
 

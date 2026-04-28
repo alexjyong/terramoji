@@ -167,19 +167,31 @@ function spawnCreatures() {
   const { cells, width, height } = state.grid;
   const MAX_PER_CELL = 5;
   const MAX_TOTAL = 200;
+  const MAX_PER_BIOME = 40; // distribute creatures across biomes so poles don't dominate
   let total = totalCreatures(cells, width, height);
+
+  // Count per-biome to cap each biome's share
+  const biomeCounts = {};
+  for (let r = 0; r < height; r++) {
+    for (let c = 0; c < width; c++) {
+      const b = cells[r][c].biome;
+      biomeCounts[b] = (biomeCounts[b] || 0) + (cells[r][c].creatures || []).length;
+    }
+  }
 
   for (let r = 0; r < height; r++) {
     for (let c = 0; c < width; c++) {
       const cell = cells[r][c];
       if ((cell.creatures || []).length >= MAX_PER_CELL) continue;
       if (total >= MAX_TOTAL) return;
+      if ((biomeCounts[cell.biome] || 0) >= MAX_PER_BIOME) continue;
 
       // Find a creature type compatible with this biome
       for (const [name, ct] of Object.entries(CREATURE_TYPES)) {
         if (ct.compatibleBiomes.includes(cell.biome)) {
           cell.creatures.push(createCreature(name, r, c));
           total++;
+          biomeCounts[cell.biome] = (biomeCounts[cell.biome] || 0) + 1;
           break; // one spawn per cell per pass
         }
       }
@@ -234,12 +246,42 @@ function moveCreatures() {
   }
 }
 
+// --- T026: tick function ---
+let tickInterval = null;
+
+function tick() {
+  if (state.isPaused) return;
+
+  moveCreatures();
+  spawnCreatures();
+  removeIncompatibleCreatures();
+  state.tick++;
+
+  renderGrid();
+}
+
+// --- T027: startSimulation ---
+function startSimulation() {
+  // Restart if already running (clear old interval)
+  if (tickInterval) {
+    clearInterval(tickInterval);
+  }
+  state.isRunning = true;
+  tickInterval = setInterval(tick, 1000);
+}
+
+// --- T023: removeIncompatibleCreatures ---
+function removeIncompatibleCreatures() {
+  const { cells, width, height } = state.grid;
+  for (let r = 0; r < height; r++) {
+    for (let c = 0; c < width; c++) {
+      const cell = cells[r][c];
+      cell.creatures = cell.creatures.filter(cr => cr.compatibleBiomes.includes(cell.biome));
+    }
+  }
+}
+
 // --- Tick Loop (T026/T027) ---
-// TODO: Implement tick() function that:
-//   1. Returns early if state.isPaused is true (per data-model.md: "skipped when isPaused is true")
-//   2. Calls moveCreatures(), spawnCreatures(), removes incompatible creatures
-//   3. Increments state.tick
-// TODO: Implement startSimulation() with setInterval(tick, 1000)
 
 // --- Manual Biome Editing (T019a) ---
 

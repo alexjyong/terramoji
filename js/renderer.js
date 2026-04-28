@@ -24,17 +24,26 @@ function renderGrid() {
       div.dataset.col = c;
       div.dataset.biome = cell.biome; // CSS selector hook for biome styles
 
-      // Render landmark emoji for mountain/forest/jungle (permanent entities per Constitution II)
+      // Render cell content — landmark as base text, creature as absolute overlay
       const landmark = BIOMES[cell.biome].landmark;
+      const hasCreatures = cell.creatures && cell.creatures.length > 0;
+
       if (landmark) {
         div.textContent = landmark;
+        // Overlay creature emoji centered on top of landmark
+        if (hasCreatures) {
+          const crSpan = document.createElement('span');
+          crSpan.className = 'creature-overlay';
+          crSpan.textContent = BIOMES[cell.biome].creature;
+          div.appendChild(crSpan);
+        }
       }
       // Render cactus emoji on desert tiles
       else if (cell.cactus) {
         div.textContent = '🌵';
       }
       // Render creatures as emoji (entities remain emoji per constitution)
-      else if (cell.creatures && cell.creatures.length > 0) {
+      else if (hasCreatures) {
         div.textContent = BIOMES[cell.biome].creature;
       }
       // No emoji on base terrain — CSS gradients/textures handle visuals
