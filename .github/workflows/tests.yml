@@ -1,0 +1,26 @@
+name: Tests
+
+on:
+  push:
+    branches: main
+  pull_request:
+    branches: main
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Use Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+
+      - name: Run simulation tests
+        run: node tests/test_simulation.js
+
+      - name: Run renderer integration tests
+        run: node tests/test_renderer.js
