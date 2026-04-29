@@ -98,6 +98,10 @@ function enforcePoles() {
 }
 
 function smoothGrid() {
+  // Cellular automata smoothing: each cell adopts the most common biome
+  // from its 3×3 neighborhood (including itself). Running multiple passes
+  // creates clustered biomes rather than a salt-and-pepper grid.
+  // Note: enforcePoles() must run before this (see ice-spread-bug memory).
   const { cells, width, height } = state.grid;
   const next = [];
 
@@ -164,6 +168,9 @@ function totalCreatures(cells, width, height) {
 
 // --- T024: spawnCreatures ---
 function spawnCreatures() {
+  // Spawn creatures on eligible cells using round-robin interleaving across
+  // biomes so that no single biome dominates the total creature count.
+  // Caps: 5 per cell, 200 total, 35 per biome.
   const { cells, width, height } = state.grid;
   const MAX_PER_CELL = 5;
   const MAX_TOTAL = 200;
@@ -179,7 +186,7 @@ function spawnCreatures() {
     }
   }
 
-  // Collect all eligible cells, grouped by biome — then interleave biomes evenly
+  // Collect all eligible cells, grouped by biome
   const biomeCells = {};
   for (let r = 0; r < height; r++) {
     for (let c = 0; c < width; c++) {
@@ -191,7 +198,9 @@ function spawnCreatures() {
     }
   }
 
-  // Interleave: pick one cell from each biome in round-robin until all are processed
+  // Interleave: pick one cell from each biome in round-robin order so that
+  // creatures are distributed evenly across all biomes rather than filling
+  // one biome completely before moving to the next.
   const ordered = [];
   const biomeList = Object.keys(biomeCells);
   let biomesLeft = biomeList.length;
@@ -229,6 +238,10 @@ function spawnCreatures() {
 
 // --- T025: moveCreatures ---
 function moveCreatures() {
+  // Each creature attempts to move to a random adjacent cell (4-directional,
+  // no diagonals). The move only succeeds if the destination biome is in the
+  // creature's compatibleBiomes list. Creatures that can't move stay in place.
+  // Implementation: collect all creatures, clear grids, then reassign.
   const { cells, width, height } = state.grid;
 
   // Collect all creatures with their current positions
@@ -278,6 +291,9 @@ function moveCreatures() {
 let tickInterval = null;
 
 function tick() {
+  // The simulation tick runs every 1000ms via setInterval.
+  // Order matters: move first, then spawn new creatures, then remove any
+  // creatures now on incompatible biomes. Finally re-render the grid.
   if (state.isPaused) return;
 
   moveCreatures();
@@ -290,7 +306,8 @@ function tick() {
 
 // --- T027: startSimulation ---
 function startSimulation() {
-  // Restart if already running (clear old interval)
+  // Clear any existing interval to prevent multiple tick loops running
+  // when the user generates a new planet without stopping the old one.
   if (tickInterval) {
     clearInterval(tickInterval);
   }

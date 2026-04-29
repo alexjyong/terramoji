@@ -81,6 +81,7 @@ document.addEventListener('keydown', (e) => {
 
 // --- Grid Cell Click Handler (T019b) + Drag-to-Paint (T020b) ---
 
+// Track whether the user is currently dragging across cells
 let isPainting = false;
 let renderPending = false;
 
@@ -101,6 +102,7 @@ gridEl.addEventListener('mousedown', (e) => {
   paintCell(cellDiv);
 });
 
+// Paint cells as the mouse drags over them
 gridEl.addEventListener('mouseover', (e) => {
   if (!isPainting) return;
   const cellDiv = e.target.closest('.cell');
@@ -108,6 +110,7 @@ gridEl.addEventListener('mouseover', (e) => {
   paintCell(cellDiv);
 });
 
+// Stop painting when mouse button is released anywhere on the page
 document.addEventListener('mouseup', () => {
   isPainting = false;
 });
@@ -119,7 +122,9 @@ function paintCell(cellDiv) {
   scheduleRender();
 }
 
-// Throttled re-render for smooth drag painting
+// Throttled re-render for smooth drag painting — uses requestAnimationFrame
+// so that a fast drag triggers only one re-render per frame instead of
+// one per cell hovered over.
 function scheduleRender() {
   if (renderPending) return;
   renderPending = true;

@@ -24,7 +24,7 @@ function renderGrid() {
       div.dataset.col = c;
       div.dataset.biome = cell.biome; // CSS selector hook for biome styles
 
-      // Render cell content — landmark as base text, creature as absolute overlay
+      // Render priority: landmark > cactus > creature > nothing (base terrain)
       const landmark = BIOMES[cell.biome].landmark;
       const hasCreatures = cell.creatures && cell.creatures.length > 0;
 
