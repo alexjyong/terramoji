@@ -150,8 +150,8 @@
 
 - [x] T030 [P] Create README.md with setup instructions, feature status, project structure
 - [x] T031 Code cleanup: remove console.debug statements, add inline comments for complex logic (cellular automata, tick loop)
-- [ ] T032 [P] Integration test: verify state change → DOM update cycle in tests/test_renderer.js
-- [ ] T033 Run quickstart.md validation: open index.html, verify all 3 user stories work end-to-end
+- [x] T032 [P] Integration test: verify state change → DOM update cycle in tests/test_renderer.js
+- [x] T033 Run quickstart.md validation: open index.html, verify all 3 user stories work end-to-end
 
 ---
 
