@@ -5,7 +5,7 @@
 
 ## Summary
 
-Expand creature roster from 7 to ~25 types across all biomes with multi-biome compatibility. Add civilization mode: player creates civilizations via Monolith tool (requires creatures) or manual placement, civilizations auto-advance through 7 tech stages (Stone→Nanotech) with ~2% chance per tick. Civilizations coexist with creatures, persist through biome changes, and display in inspect tooltip.
+Expand creature roster from 7 to ~25 types across all biomes with multi-biome compatibility. Add civilization mode: player creates civilizations via Monolith tool (requires creatures) or manual placement, civilizations auto-advance through 7 tech stages (Stone→Nanotech) with ~2% chance per tick. Civilizations coexist with creatures, persist through biome changes, and display in inspect tooltip. Add mobile units that spawn from civilizations (Stone–Information era), wander the map via random walk, and establish new settlements — SimEarth-style spreading.
 
 ## Technical Context
 
@@ -17,7 +17,7 @@ Expand creature roster from 7 to ~25 types across all biomes with multi-biome co
 **Project Type**: Single-page web application
 **Performance Goals**: 60fps rendering on 30×30 grid with 25 creature types and active civilizations
 **Constraints**: No external assets (emoji + CSS only), no frameworks, single state object, DOM-based rendering
-**Scale/Scope**: ~25 creatures, 7 tech stages, unlimited civilization cells, same 30×30 grid
+**Scale/Scope**: ~25 creatures, 7 tech stages, unlimited civilization cells, ~8 mobile unit types, same 30×30 grid
 
 ## Constitution Check
 
@@ -25,7 +25,7 @@ Expand creature roster from 7 to ~25 types across all biomes with multi-biome co
 
 | Principle | Compliance | Notes |
 |-----------|-----------|-------|
-| I. Simplicity First | ✅ | No networking, no save/load, no AI. Civs don't spread or interact — just advance independently |
+| I. Simplicity First | ✅ | No networking, no save/load, no AI. Units use random walk — no pathfinding. Max 20 active units capped |
 | II. Emoji-First Graphics | ✅ | All new creatures and tech stages are emoji. CSS terrain unchanged |
 | III. Simulation Integrity | ✅ | Deterministic tick loop extended with civ advancement. Same seed → same outcome |
 | IV. Interactive by Default | ✅ | Monolith and civ placement are toolbar buttons — one click to select, one click to place |
@@ -98,10 +98,23 @@ index.html               # Modified: add Monolith button + Civ placement button 
 - Style civilization overlay in CSS
 - Update inspect tooltip to show tech stage name + emoji
 
-### Phase 5: Integration & Tests
+### Phase 5: Mobile Units — Spreading & Settlement
+- Define `UNIT_TYPES` mapping: stage → `{ emoji, movementType }` for land and sea variants
+- Add `unit` field to cell data model (`MobileUnit | null`)
+- Implement `spawnUnit(civCell)` with ~1% chance per tick per civilization (stages 0–5)
+- Implement `moveUnit(cell)` — random walk to valid adjacent cell (8-directional)
+- Implement `settleUnit(cell)` — if no civ present, create one at unit's stage; unit disappears
+- Enforce terrain restrictions: land/sea/air movement types
+- Enforce max 20 active units globally
+- Clear all units on planet regeneration
+- Update render priority: landmark > civilization > unit > cactus > creature
+
+### Phase 6: Integration & Tests
 - Add tests for expanded creature spawning
 - Add tests for civilization creation (monolith + manual)
 - Add tests for tech advancement over multiple ticks
 - Add tests for civ persistence through biome changes
-- Add renderer integration tests for civ display
+- Add tests for unit spawning, movement, terrain restrictions, and settling
+- Add tests for unit cap enforcement and planet reset clearing units
+- Add renderer integration tests for civ display and unit overlay
 - Run full test suite, verify quickstart scenarios

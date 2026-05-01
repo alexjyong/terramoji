@@ -1,36 +1,203 @@
 # Tasks: More Creatures & Civilization Mode
 
 **Branch**: `002-more-creatures-civ` | **Date**: 2026-04-30
+**Total**: 35 tasks across 6 phases
 
-## Phase 1: Expanded Creature Roster (finishing)
+## Phase 1: Expanded Creature Roster (done)
 
-- [ ] **T1** Update renderer to recognize new creature emojis in inspect tooltip
+- [x] **T1** Add 18 new creatures to `CREATURE_TYPES` in `simulation.js`
+  - All 25 creature types with `compatibleBiomes` arrays
+  - _File: `js/simulation.js`_
+
+- [x] **T2** Add `getCreaturesForBiome()` helper and update spawning to pick from expanded pool
+  - _File: `js/simulation.js`_
+
+- [ ] **T3** Update renderer to recognize new creature emojis in inspect tooltip
   - Verify all 25 creature types display correctly when inspected
-  - _Depends on: none (creatures already added to simulation.js)_
+  - _File: `js/renderer.js`_
+  - _Test: `tests/test_renderer.js`_
 
 ## Phase 2: Civilization Core
 
-- [ ] **T2** Add `TECH_STAGES` array with 7 stages (Stone → Nanotech), each with name + emoji
+- [ ] **T4** Add `TECH_STAGES` array with 7 stages (Stone → Nanotech), each with `name` + `emoji`
   - Define in `simulation.js` alongside `CREATURE_TYPES`
-  - _Depends on: none_
+  - Stages: 🛖 Stone, 🛕 Bronze, 🏰 Iron, 🏭 Industrial, ☢️ Atomic, 💻 Information, 🔮 Nanotech
+  - Add `TECH_ADVANCE_CHANCE` constant (default 0.02)
+  - _File: `js/simulation.js`_
 
-- [ ] **T3** Extend cell data model — `civilization` field from `null` to `{ stage: number }`
-  - Update `createCell()` to initialize `civilization: null`
-  - _Depends on: T2_
+- [ ] **T5** Extend cell data model — `civilization` field from `null` to `{ stage: number }`
+  - Verify `createCell()` and grid init initialize `civilization: null` (already done in current code)
+  - _File: `js/simulation.js`_
+  - _Test: `tests/test_simulation.js` — verify cell has civilization: null_
 
-- [ ] **T4** Implement `createCivilization(row, col)` function
-  - Requires a creature present on the cell
+- [ ] **T6** Implement `createCivilization(row, col)` function
+  - Checks cell has creatures present (monolith mode) OR allows placement regardless (manual mode)
   - Sets `cell.civilization = { stage: 0 }`
-  - _Depends on: T3_
+  - Returns false if civilization already exists
+  - _File: `js/simulation.js`_
+  - _Depends on: T4, T5_
+  - _Test: `tests/test_simulation.js` — create civ, verify stage 0_
 
-- [ ] **T5** Implement `advanceCivilization(civ, cell)` with ~2% chance per tick
-  - Clamps at max stage (index 6)
-  - Called from existing tick loop
-  - _Depends on: T2, T4_
+- [ ] **T7** Implement `advanceCivilization(cell)` with ~2% chance per tick
+  - Increments `cell.civilization.stage` by 1, clamped at max stage (index 6)
+  - Called from existing tick loop for every cell with a civilization
+  - _File: `js/simulation.js`_
+  - _Depends on: T4_
+  - _Test: `tests/test_simulation.js` — advance over multiple ticks, verify progression_
 
-- [ ] **T6** Update `smoothGrid()` to preserve civilization data during biome smoothing
-  - Civilizations persist even if biome changes underneath
-  - _Depends on: T3_
+- [ ] **T8** Integrate civilization advancement into `tick()` function
+  - Loop all cells, call `advanceCivilization()` for each civ cell
+  - _File: `js/simulation.js`_
+  - _Depends on: T7_
 
-- [ ] **T7** Update `generatePlanet()` to reset all civilizations on new planet generation
-  - _Depends on: T3_
+- [ ] **T9** Update `smoothGrid()` to preserve civilization data during biome smoothing
+  - Copy `civilization` from old cell to new cell in smoothing pass
+  - _File: `js/simulation.js`_
+  - _Depends on: T5_
+  - _Test: `tests/test_simulation.js` — smooth grid, verify civ persists_
+
+- [ ] **T10** Update `generatePlanet()` to reset all civilizations and clear units on new planet
+  - _File: `js/simulation.js`_
+  - _Depends on: T5_
+  - _Test: `tests/test_simulation.js` — generate planet, verify all civs null_
+
+## Phase 3: UI — Monolith & Placement Tools
+
+- [ ] **T11** Add 🗿 Monolith button and 🏠 Civ placement button to toolbar in `index.html`
+  - Group in a new `<div class="civ-buttons">` section
+  - _File: `index.html`_
+
+- [ ] **T12** Extend `state` object with `monolithMode` and `civMode` boolean flags
+  - Mutually exclusive with `selectedBiome` and `inspectMode`
+  - _File: `js/simulation.js`_
+  - _Depends on: T11_
+
+- [ ] **T13** Add click handlers in `input.js` for Monolith and Civ placement tools
+  - Monolith: call `createCivilization(row, col)` only if cell has creatures
+  - Manual: call `createCivilization(row, col)` on any tile
+  - Deselect other tools when either is selected
+  - _File: `js/input.js`_
+  - _Depends on: T6, T12_
+
+- [ ] **T14** Style new toolbar buttons in CSS (active state, hover)
+  - _File: `css/game.css`_
+
+## Phase 4: Renderer — Civilization Display
+
+- [ ] **T15** Render civilization emoji on cell based on `TECH_STAGES[cell.civilization.stage].emoji`
+  - Update render priority: landmark > civilization > unit > cactus > creature
+  - Civilization emoji renders as main cell content; creature overlays as span
+  - _File: `js/renderer.js`_
+  - _Depends on: T4, T10_
+  - _Test: `tests/test_renderer.js` — verify civ emoji appears_
+
+- [ ] **T16** Update inspect tooltip to show tech stage name + emoji from `TECH_STAGES`
+  - Replace hardcoded `🏛️` with dynamic stage lookup
+  - _File: `js/renderer.js`_
+  - _Depends on: T4, T15_
+  - _Test: `tests/test_renderer.js` — verify tooltip shows correct stage_
+
+## Phase 5: Mobile Units — Spreading & Settlement
+
+- [ ] **T17** Define `UNIT_TYPES` mapping in `simulation.js`
+  - Object mapping stage index (0-5) → `{ emoji, movementType }` for land and sea variants
+  - Stone: 🚶 land, Bronze: 🏇 land + 🛶 sea, Iron: 🐪 land + ⛵ sea, Industrial: 🚂 land + 🚢 sea, Atomic/Information: ✈️ air
+  - Add `UNIT_SPAWN_CHANCE` (default 0.01) and `MAX_UNITS` (default 20)
+  - _File: `js/simulation.js`_
+  - _Depends on: T4_
+
+- [ ] **T18** Add `unit` field to cell data model (`MobileUnit | null`)
+  - Initialize as `null` in `createCell()`, `smoothGrid()`, `generatePlanet()`
+  - _File: `js/simulation.js`_
+  - _Depends on: T17_
+
+- [ ] **T19** Implement `countActiveUnits()` helper
+  - Returns total units across all cells (for cap enforcement)
+  - _File: `js/simulation.js`_
+  - _Depends on: T18_
+
+- [ ] **T20** Implement `spawnUnit(row, col)` function
+  - ~1% chance per tick per civilization cell (stages 0-5 only, not nanotech)
+  - Checks unit cap before spawning
+  - Picks land or sea unit based on current cell biome (water → sea unit if available, else land unit)
+  - Creates `unit: { emoji, stage, movementType }` on the cell
+  - _File: `js/simulation.js`_
+  - _Depends on: T17, T18, T19_
+  - _Test: `tests/test_simulation.js` — spawn unit, verify properties_
+
+- [ ] **T21** Implement `moveUnits()` function
+  - Iterate all cells, for each unit: pick random adjacent cell (8-directional including diagonals)
+  - Wrap around map edges (toroidal topology)
+  - Check terrain restriction: land can't enter water, sea can't enter land, air crosses anything
+  - If move invalid, unit stays in place
+  - _File: `js/simulation.js`_
+  - _Depends on: T18_
+  - _Test: `tests/test_simulation.js` — move unit, verify terrain restrictions_
+
+- [ ] **T22** Implement `settleUnit(row, col)` function
+  - If target cell has no civilization: create civ at unit's stage, clear unit from cell
+  - If target cell has civilization: unit disappears, no effect
+  - Called after each successful move
+  - _File: `js/simulation.js`_
+  - _Depends on: T6, T21_
+  - _Test: `tests/test_simulation.js` — unit settles, verify new civ created_
+
+- [ ] **T23** Integrate unit spawning and movement into `tick()` function
+  - Order: spawn units → move units → settle units → (after existing creature/civ logic)
+  - _File: `js/simulation.js`_
+  - _Depends on: T20, T21, T22_
+
+- [ ] **T24** Clear all units on planet regeneration in `generatePlanet()`
+  - _File: `js/simulation.js`_
+  - _Depends on: T18_
+  - _Test: `tests/test_simulation.js` — generate planet, verify no units_
+
+- [ ] **T25** Render mobile unit emoji overlay in renderer
+  - Unit renders as CSS overlay span on the cell (below civilization emoji, above cactus/creature)
+  - _File: `js/renderer.js`_
+  - _Depends on: T18_
+  - _Test: `tests/test_renderer.js` — verify unit emoji renders_
+
+- [ ] **T26** Update inspect tooltip to show mobile unit info when present
+  - Display unit emoji + originating civ stage name
+  - _File: `js/renderer.js`_
+  - _Depends on: T4, T18, T25_
+  - _Test: `tests/test_renderer.js` — verify tooltip shows unit_
+
+- [ ] **T27** Style unit overlay in CSS (position, size, z-index)
+  - _File: `css/game.css`_
+
+## Phase 6: Integration & Tests
+
+- [ ] **T28** Add tests for civilization creation (monolith + manual)
+  - _File: `tests/test_simulation.js`_
+  - _Depends on: T6_
+
+- [ ] **T29** Add tests for tech advancement over multiple ticks
+  - Verify progression Stone → Bronze → ... → Nanotech, terminal at stage 6
+  - _File: `tests/test_simulation.js`_
+  - _Depends on: T7_
+
+- [ ] **T30** Add tests for civ persistence through biome changes
+  - Change biome under civ, verify civ data preserved
+  - _File: `tests/test_simulation.js`_
+  - _Depends on: T9_
+
+- [ ] **T31** Add tests for unit spawning, movement, terrain restrictions, and settling
+  - _File: `tests/test_simulation.js`_
+  - _Depends on: T20, T21, T22_
+
+- [ ] **T32** Add tests for unit cap enforcement and planet reset clearing units
+  - _File: `tests/test_simulation.js`_
+  - _Depends on: T23, T24_
+
+- [ ] **T33** Add renderer integration tests for civ display and unit overlay
+  - _File: `tests/test_renderer.js`_
+  - _Depends on: T15, T25_
+
+- [ ] **T34** Run full test suite, fix any failures
+  - _Files: `tests/test_simulation.js`, `tests/test_renderer.js`_
+
+- [ ] **T35** Verify quickstart scenarios from `quickstart.md`
+  - Launch game, create civ, watch it advance, watch units spread
+  - _Depends on: T34_

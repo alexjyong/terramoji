@@ -2,13 +2,14 @@
 
 ## Cell (updated)
 
-Each cell in the 30×30 grid. Existing structure extended with civilization.
+Each cell in the 30×30 grid. Existing structure extended with civilization and mobile units.
 
 | Field | Type | Description |
 |-------|------|-------------|
 | `biome` | `string` | One of: water, grassland, desert, mountain, forest, jungle, ice |
 | `creatures` | `Creature[]` | Array of creatures on this cell (max 5) |
 | `civilization` | `Civilization \| null` | Civilization on this cell, or null |
+| `unit` | `MobileUnit \| null` | Mobile unit currently occupying this cell, or null |
 | `cactus` | `boolean \| undefined` | Desert-only flag for 🌵 rendering |
 
 ### Validation
@@ -16,6 +17,7 @@ Each cell in the 30×30 grid. Existing structure extended with civilization.
 - `creatures.length ≤ 5`
 - Total creatures across all cells ≤ 200
 - `civilization.stage` must be 0–6 if present
+- Total active `unit` entries across all cells ≤ 20
 
 ## Creature (updated)
 
@@ -64,7 +66,7 @@ Attached to a cell. Represents a sentient settlement advancing through tech stag
 ### State Transitions
 
 ```
-Stage 0 (🪨 Stone) --tick+chance--> Stage 1 (🔶 Bronze) --tick+chance--> Stage 2 (⚙️ Iron)
+Stage 0 (🛖 Stone) --tick+chance--> Stage 1 (🛕 Bronze) --tick+chance--> Stage 2 (🏰 Iron)
      --> Stage 3 (🏭 Industrial) --> Stage 4 (☢️ Atomic) --> Stage 5 (💻 Information) --> Stage 6 (🔮 Nanotech) [terminal]
 ```
 
@@ -76,21 +78,50 @@ Stage 0 (🪨 Stone) --tick+chance--> Stage 1 (🔶 Bronze) --tick+chance--> Sta
 ### Creation Methods
 1. **Monolith**: Player clicks tile with creatures → `{ stage: 0 }` created
 2. **Manual placement**: Player clicks any tile → `{ stage: 0 }` created
-3. Cannot create if `civilization` is already non-null
+3. **Unit settlement**: Mobile unit lands on cell with no civilization → `{ stage: unit.stage }` created
+4. Cannot create if `civilization` is already non-null
 
 ## Tech Stages (new)
 
 Ordered enum of 7 stages. Same for all biomes.
 
-| Stage | Name | Emoji |
-|-------|------|-------|
-| 0 | Stone | 🪨 |
-| 1 | Bronze | 🔶 |
-| 2 | Iron | ⚙️ |
-| 3 | Industrial | 🏭 |
-| 4 | Atomic | ☢️ |
-| 5 | Information | 💻 |
-| 6 | Nanotech | 🔮 |
+| Stage | Name | Emoji | Land Unit | Sea Unit |
+|-------|------|-------|-----------|----------|
+| 0 | Stone | 🛖 | 🚶 | *(none)* |
+| 1 | Bronze | 🛕 | 🏇 | 🛶 |
+| 2 | Iron | 🏰 | 🐪 | ⛵ |
+| 3 | Industrial | 🏭 | 🚂 | 🚢 |
+| 4 | Atomic | ☢️ | ✈️ | ✈️ |
+| 5 | Information | 💻 | ✈️ | ✈️ |
+| 6 | Nanotech | 🔮 | *(none)* | *(none)* |
+
+## MobileUnit (new)
+
+Lightweight entity that moves across the grid, spawning from civilizations and settling to create new ones.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `emoji` | `string` | Visual representation (🚶, 🏇, 🐪, 🚂, ✈️, 🛶, ⛵, 🚢) |
+| `stage` | `number` | Tech level of originating civilization (0–5) |
+| `row` | `number` | Current row position |
+| `col` | `number` | Current column position |
+| `movementType` | `string` | One of: `"land"`, `"sea"`, `"air"` |
+
+### Behavior
+- **Spawn**: ~1% chance per tick per civilization (stages 0–5, configurable via `UNIT_SPAWN_CHANCE`)
+- **Move**: Random walk to adjacent cell each tick (8-directional including diagonals)
+- **Settle**: Landing on a cell with no civilization → create new civ at `unit.stage`, unit disappears
+- **Disappear**: Landing on a cell with existing civilization → unit vanishes, no effect
+- **Terrain restriction**: Land units can't enter water; sea units can't enter land; air units (✈️) cross any terrain
+- **Wrap**: Reaching map edge wraps to opposite side (toroidal topology)
+- **Cap**: Max 20 active units across the entire grid
+
+### Unit Type Mapping
+| movementType | Can enter | Cannot enter |
+|---|---|---|
+| `land` | All non-water biomes | water |
+| `sea` | water | All non-water biomes |
+| `air` | All biomes | *(none)* |
 
 ## State Object (updated)
 
