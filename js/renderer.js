@@ -27,6 +27,8 @@ function renderGrid() {
       // Render priority: landmark > cactus > creature > nothing (base terrain)
       const landmark = BIOMES[cell.biome].landmark;
       const hasCreatures = cell.creatures && cell.creatures.length > 0;
+      // Use the first creature's emoji from the expanded roster (not the old BIOMES default)
+      const creatureEmoji = hasCreatures ? cell.creatures[0].emoji : null;
 
       if (landmark) {
         div.textContent = landmark;
@@ -34,7 +36,7 @@ function renderGrid() {
         if (hasCreatures) {
           const crSpan = document.createElement('span');
           crSpan.className = 'creature-overlay';
-          crSpan.textContent = BIOMES[cell.biome].creature;
+          crSpan.textContent = creatureEmoji;
           div.appendChild(crSpan);
         }
       }
@@ -42,9 +44,9 @@ function renderGrid() {
       else if (cell.cactus) {
         div.textContent = '🌵';
       }
-      // Render creatures as emoji (entities remain emoji per constitution)
+      // Render creatures as emoji (from expanded CREATURE_TYPES roster)
       else if (hasCreatures) {
-        div.textContent = BIOMES[cell.biome].creature;
+        div.textContent = creatureEmoji;
       }
       // No emoji on base terrain — CSS gradients/textures handle visuals
 
@@ -71,12 +73,12 @@ function showInspectTooltip(row, col, cellDiv) {
     const groups = {};
     for (const cr of cell.creatures) {
       const key = cr.emoji;
-      if (!groups[key]) groups[key] = { emoji: cr.emoji, count: 0 };
+      if (!groups[key]) groups[key] = { emoji: cr.emoji, name: cr.name || cr.emoji, count: 0 };
       groups[key].count++;
     }
     let creatureRows = '';
     for (const g of Object.values(groups)) {
-      creatureRows += `<div class="tooltip-creature">${g.emoji} × ${g.count}</div>`;
+      creatureRows += `<div class="tooltip-creature">${g.emoji} ${g.name} × ${g.count}</div>`;
     }
     html += `<div class="tooltip-section"><div class="tooltip-label">Creature</div>${creatureRows}</div>`;
   } else {

@@ -137,15 +137,58 @@ function smoothGrid() {
 }
 
 // --- Creature Configuration (many-to-many biome compatibility) ---
+// Expanded roster: ~25 creatures across all biomes.
+// Multi-biome creatures (eagle, bear, snake, etc.) naturally migrate between habitats.
 const CREATURE_TYPES = {
-  fish:    { emoji: '🐟', compatibleBiomes: ['water'] },
-  cow:     { emoji: '🐄', compatibleBiomes: ['grassland', 'forest'] },
-  camel:   { emoji: '🐪', compatibleBiomes: ['desert'] },
-  goat:    { emoji: '🐐', compatibleBiomes: ['mountain', 'grassland'] },
-  deer:    { emoji: '🦌', compatibleBiomes: ['forest', 'grassland'] },
-  parrot:  { emoji: '🦜', compatibleBiomes: ['jungle', 'forest'] },
-  penguin: { emoji: '🐧', compatibleBiomes: ['ice'] },
+  // Water
+  fish:     { emoji: '🐟', compatibleBiomes: ['water'] },
+  octopus:  { emoji: '🐙', compatibleBiomes: ['water'] },
+  shark:    { emoji: '🦈', compatibleBiomes: ['water'] },
+  turtle:   { emoji: '🐢', compatibleBiomes: ['water', 'desert'] },
+  dolphin:  { emoji: '🐬', compatibleBiomes: ['water'] },
+
+  // Grassland
+  cow:      { emoji: '🐄', compatibleBiomes: ['grassland', 'forest'] },
+  horse:    { emoji: '🐴', compatibleBiomes: ['grassland'] },
+  sheep:    { emoji: '🐑', compatibleBiomes: ['grassland'] },
+  lion:     { emoji: '🦁', compatibleBiomes: ['grassland'] },
+  elephant: { emoji: '🐘', compatibleBiomes: ['grassland', 'forest'] },
+
+  // Desert
+  camel:    { emoji: '🐪', compatibleBiomes: ['desert'] },
+  scorpion: { emoji: '🦂', compatibleBiomes: ['desert'] },
+  lizard:   { emoji: '🦎', compatibleBiomes: ['desert'] },
+
+  // Mountain (+ shared with grassland/forest)
+  goat:     { emoji: '🐐', compatibleBiomes: ['mountain', 'grassland'] },
+  eagle:    { emoji: '🦅', compatibleBiomes: ['mountain', 'grassland'] },
+
+  // Forest (+ shared with grassland/jungle)
+  deer:     { emoji: '🦌', compatibleBiomes: ['forest', 'grassland'] },
+  fox:      { emoji: '🦊', compatibleBiomes: ['forest'] },
+  squirrel: { emoji: '🐿️', compatibleBiomes: ['forest'] },
+  boar:     { emoji: '🐗', compatibleBiomes: ['forest'] },
+  bear:     { emoji: '🐻', compatibleBiomes: ['forest', 'mountain'] },
+
+  // Jungle (+ shared with forest/desert)
+  parrot:   { emoji: '🦜', compatibleBiomes: ['jungle', 'forest'] },
+  monkey:   { emoji: '🐒', compatibleBiomes: ['jungle'] },
+  butterfly:{ emoji: '🦋', compatibleBiomes: ['jungle', 'forest', 'grassland'] },
+  snake:    { emoji: '🐍', compatibleBiomes: ['jungle', 'desert'] },
+
+  // Ice
+  penguin:  { emoji: '🐧', compatibleBiomes: ['ice'] },
+  polarbear:{ emoji: '🐻‍❄️', compatibleBiomes: ['ice'] },
+  seal:     { emoji: '🦭', compatibleBiomes: ['ice', 'water'] },
 };
+
+// Build a reverse index: biome → list of creature names that can live there
+// (used by spawning to pick a random creature for a given biome)
+function getCreaturesForBiome(biome) {
+  return Object.keys(CREATURE_TYPES).filter(
+    name => CREATURE_TYPES[name].compatibleBiomes.includes(biome)
+  );
+}
 
 let creatureIdCounter = 0;
 
@@ -153,7 +196,7 @@ function createCreature(name, row, col) {
   const ct = CREATURE_TYPES[name];
   if (!ct) throw new Error(`Unknown creature type: ${name}`);
   creatureIdCounter++;
-  return { id: `c_${creatureIdCounter}`, emoji: ct.emoji, compatibleBiomes: [...ct.compatibleBiomes], row, col };
+  return { id: `c_${creatureIdCounter}`, name, emoji: ct.emoji, compatibleBiomes: [...ct.compatibleBiomes], row, col };
 }
 
 function totalCreatures(cells, width, height) {
@@ -225,14 +268,13 @@ function spawnCreatures() {
     if ((biomeCounts[biome] || 0) >= MAX_PER_BIOME) continue;
 
     const cell = cells[r][c];
-    for (const [name, ct] of Object.entries(CREATURE_TYPES)) {
-      if (ct.compatibleBiomes.includes(cell.biome)) {
-        cell.creatures.push(createCreature(name, r, c));
-        total++;
-        biomeCounts[biome] = (biomeCounts[biome] || 0) + 1;
-        break;
-      }
-    }
+    // Pick a random creature type that is compatible with this cell's biome
+    const candidates = getCreaturesForBiome(cell.biome);
+    if (candidates.length === 0) continue;
+    const chosen = candidates[Math.floor(Math.random() * candidates.length)];
+    cell.creatures.push(createCreature(chosen, r, c));
+    total++;
+    biomeCounts[biome] = (biomeCounts[biome] || 0) + 1;
   }
 }
 

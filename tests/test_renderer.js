@@ -242,13 +242,9 @@ const {
         const idx = r * 30 + c;
         const domCell = gridEl.children[idx];
         // Cell should have creature emoji in textContent or a creature-overlay child
-        const hasCreatureText = domCell.textContent.includes('🐟') ||
-                               domCell.textContent.includes('🐄') ||
-                               domCell.textContent.includes('🐪') ||
-                               domCell.textContent.includes('🐐') ||
-                               domCell.textContent.includes('🦌') ||
-                               domCell.textContent.includes('🦜') ||
-                               domCell.textContent.includes('🐧');
+        // Check against all 25 creature emojis from the expanded roster
+        const allEmojis = Object.values(CREATURE_TYPES).map(ct => ct.emoji);
+        const hasCreatureText = allEmojis.some(emoji => domCell.textContent.includes(emoji));
         const hasOverlay = domCell.children.some(ch => ch.className === 'creature-overlay');
         assert.ok(
           hasCreatureText || hasOverlay,
