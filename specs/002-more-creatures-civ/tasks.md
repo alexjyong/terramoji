@@ -158,7 +158,7 @@
   - _Depends on: T18_
   - _Test: `tests/test_renderer.js` — verify unit emoji renders_
 
-- [ ] **T26** Update inspect tooltip to show mobile unit info when present
+- [x] **T26** Update inspect tooltip to show mobile unit info when present
   - Display unit emoji + originating civ stage name
   - _File: `js/renderer.js`_
   - _Depends on: T4, T18, T25_
@@ -167,37 +167,65 @@
 - [x] **T27** Style unit overlay in CSS (position, size, z-index)
   - _File: `css/game.css`_
 
-## Phase 6: Integration & Tests
+## Phase 6: Bug fixes & polish
 
-- [ ] **T28** Add tests for civilization creation (monolith + manual)
+- [x] **T28** Fix duplicate `createCivilization` calls on touch devices (touchstart + mousedown co-firing)
+  - Replace mousedown/touchstart/touchmove/touchend with pointerdown/pointermove/pointerup
+  - _File: `js/input.js`_
+
+- [x] **T29** Fix monolith/civ button behavior split
+  - Monolith: only founds first civ (one-per-planet guard, requires creatures)
+  - Civ button: places new city at max existing tech stage (requires existing civ, any empty cell)
+  - No manual advancing — advancing only via tick loop
+  - _File: `js/simulation.js`_
+
+- [x] **T30** Fix mobile units vanishing after one move
+  - Units now persist and wander for `UNIT_WANDER_TICKS` (8 ticks) before settling
+  - _File: `js/simulation.js`_
+
+- [x] **T30b** Fix invisible cities on landmark/cactus tiles
+  - Render priority changed to: civilization > landmark > cactus, with landmark/cactus as overlay when civ exists
+  - _File: `js/renderer.js`_
+
+- [x] **T30c** Increase unit spawn rate — raised UNIT_SPAWN_CHANCE from 1% to 5%
+  - With 1-2 civ cells, units now spawn every ~10-20 seconds instead of 50-100
+  - _File: `js/simulation.js` (UNIT_SPAWN_CHANCE constant)_
+
+- [x] **T30d** Units rest 1 tick on spawn cell before moving — visible on origin cell
+  - Added `restTicks: 1` to spawned units, `moveUnits()` skips movement while `restTicks > 0`
+  - _File: `js/simulation.js` (spawnUnit + moveUnits)_
+
+## Phase 7: Integration & Tests
+
+- [ ] **T31** Add tests for civilization creation (monolith + manual)
   - _File: `tests/test_simulation.js`_
   - _Depends on: T6_
 
-- [ ] **T29** Add tests for tech advancement over multiple ticks
+- [ ] **T32** Add tests for tech advancement over multiple ticks
   - Verify progression Stone → Bronze → ... → Nanotech, terminal at stage 6
   - _File: `tests/test_simulation.js`_
   - _Depends on: T7_
 
-- [ ] **T30** Add tests for civ persistence through biome changes
+- [ ] **T33** Add tests for civ persistence through biome changes
   - Change biome under civ, verify civ data preserved
   - _File: `tests/test_simulation.js`_
   - _Depends on: T9_
 
-- [ ] **T31** Add tests for unit spawning, movement, terrain restrictions, and settling
+- [ ] **T34** Add tests for unit spawning, movement, terrain restrictions, and settling
   - _File: `tests/test_simulation.js`_
   - _Depends on: T20, T21, T22_
 
-- [ ] **T32** Add tests for unit cap enforcement and planet reset clearing units
+- [ ] **T35** Add tests for unit cap enforcement and planet reset clearing units
   - _File: `tests/test_simulation.js`_
   - _Depends on: T23, T24_
 
-- [ ] **T33** Add renderer integration tests for civ display and unit overlay
+- [ ] **T36** Add renderer integration tests for civ display and unit overlay
   - _File: `tests/test_renderer.js`_
   - _Depends on: T15, T25_
 
-- [ ] **T34** Run full test suite, fix any failures
+- [ ] **T37** Run full test suite, fix any failures
   - _Files: `tests/test_simulation.js`, `tests/test_renderer.js`_
 
-- [ ] **T35** Verify quickstart scenarios from `quickstart.md`
+- [ ] **T38** Verify quickstart scenarios from `quickstart.md`
   - Launch game, create civ, watch it advance, watch units spread
-  - _Depends on: T34_
+  - _Depends on: T37_

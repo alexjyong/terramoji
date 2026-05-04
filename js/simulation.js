@@ -419,7 +419,7 @@ const UNIT_TYPES = {
   5: { land: { emoji: '✈️', movementType: 'air' }, sea: { emoji: '✈️', movementType: 'air' } },   // Information
 };
 
-const UNIT_SPAWN_CHANCE = 0.01;  // ~1% per tick per civilization
+const UNIT_SPAWN_CHANCE = 0.05;  // ~5% per tick per civilization
 const MAX_UNITS = 20;            // global cap on active mobile units
 const UNIT_WANDER_TICKS = 8;     // ticks a unit wanders before it can settle
 
@@ -551,6 +551,7 @@ function spawnUnit(row, col) {
     row: row,
     col: col,
     wanderLeft: UNIT_WANDER_TICKS,
+    restTicks: 1, // stay on spawn cell for one tick so user can see it
   };
   return true;
 }
@@ -577,6 +578,13 @@ function moveUnits() {
   ];
 
   for (const { unit, fromR, fromC } of allUnits) {
+    // If unit is resting (just spawned), stay in place this tick
+    if (unit.restTicks > 0) {
+      unit.restTicks -= 1;
+      cells[fromR][fromC].unit = unit;
+      continue;
+    }
+
     // Pick random adjacent cell (8-directional, toroidal wrap)
     const [dr, dc] = dirs[Math.floor(Math.random() * dirs.length)];
     let nr = (fromR + dr + height) % height;

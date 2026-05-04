@@ -24,18 +24,35 @@ function renderGrid() {
       div.dataset.col = c;
       div.dataset.biome = cell.biome; // CSS selector hook for biome styles
 
-      // Render priority: landmark > civilization > cactus > creature > nothing
+      // Render priority: civilization > landmark > cactus > creature > nothing
       // When a civilization exists, its emoji is the main cell content;
-      // creatures appear as a small overlay instead.
-      const landmark = BIOMES[cell.biome].landmark;
+      // landmarks/cacti/creatures appear as small overlays instead.
+      const biomeDef = BIOMES[cell.biome];
+      const landmark = biomeDef ? biomeDef.landmark : null;
       const hasCreatures = cell.creatures && cell.creatures.length > 0;
       const creatureEmoji = hasCreatures ? cell.creatures[0].emoji : null;
-      const civEmoji = cell.civilization ? TECH_STAGES[cell.civilization.stage].emoji : null;
+      const civDef = cell.civilization ? TECH_STAGES[cell.civilization.stage] : null;
+      const civEmoji = civDef ? civDef.emoji : null;
       const unitEmoji = cell.unit ? cell.unit.emoji : null;
 
-      if (landmark) {
-        div.textContent = landmark;
-        // Overlay creature emoji on landmark tiles
+      if (civEmoji) {
+        // Civilization is the main content
+        div.textContent = civEmoji;
+        // Overlay landmark emoji when civ sits on a landmark tile
+        if (landmark) {
+          const lmSpan = document.createElement('span');
+          lmSpan.className = 'creature-overlay';
+          lmSpan.textContent = landmark;
+          div.appendChild(lmSpan);
+        }
+        // Overlay cactus emoji when civ sits on a cactus tile
+        if (cell.cactus) {
+          const ctSpan = document.createElement('span');
+          ctSpan.className = 'creature-overlay';
+          ctSpan.textContent = '🌵';
+          div.appendChild(ctSpan);
+        }
+        // Overlay creature emoji when civ and creatures coexist
         if (hasCreatures) {
           const crSpan = document.createElement('span');
           crSpan.className = 'creature-overlay';
@@ -43,10 +60,9 @@ function renderGrid() {
           div.appendChild(crSpan);
         }
       }
-      else if (civEmoji) {
-        // Civilization is the main content
-        div.textContent = civEmoji;
-        // Overlay creature emoji when civ and creatures coexist
+      else if (landmark) {
+        div.textContent = landmark;
+        // Overlay creature emoji on landmark tiles
         if (hasCreatures) {
           const crSpan = document.createElement('span');
           crSpan.className = 'creature-overlay';

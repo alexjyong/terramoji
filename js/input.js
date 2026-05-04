@@ -82,6 +82,11 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
+// Dismiss tooltip when tapping it
+tooltipEl.addEventListener('click', () => {
+  hideTooltip();
+});
+
 // --- Civilization Placement Tools (T11/T12/T13) ---
 
 const monolithBtn = document.getElementById('btn-monolith');
@@ -119,20 +124,14 @@ function updateCivButtons() {
 // Track whether the user is currently dragging across cells
 let isPainting = false;
 let renderPending = false;
-let inspectJustShown = false; // track if we just showed a tooltip this mousedown/touchstart
+let inspectJustShown = false;
 
-gridEl.addEventListener('mousedown', (e) => {
+gridEl.addEventListener('pointerdown', (e) => {
   const cellDiv = e.target.closest('.cell');
   if (!cellDiv) return;
+  e.preventDefault();
   handleCellInteraction(cellDiv);
 });
-
-// Also handle touchstart for mobile — fires before touchmove
-gridEl.addEventListener('touchstart', (e) => {
-  const cellDiv = e.target.closest('.cell');
-  if (!cellDiv) return;
-  handleCellInteraction(cellDiv);
-}, { passive: true });
 
 function handleCellInteraction(cellDiv) {
   // Inspect mode (T037) — show tooltip, skip painting
@@ -172,7 +171,7 @@ function handleCellInteraction(cellDiv) {
 
 // If the user moves after an inspect tap, dismiss the tooltip so it doesn't
 // show stale info while the highlight drags across other cells.
-gridEl.addEventListener('mousemove', (e) => {
+gridEl.addEventListener('pointermove', (e) => {
   if (inspectJustShown) {
     inspectJustShown = false;
     hideTooltip(); // dismiss — content would be stale
@@ -184,23 +183,10 @@ gridEl.addEventListener('mousemove', (e) => {
   paintCell(cellDiv);
 });
 
-// Stop painting when mouse button is released anywhere on the page
-document.addEventListener('mouseup', () => {
+// Stop painting when pointer is released anywhere on the page
+document.addEventListener('pointerup', () => {
   isPainting = false;
   inspectJustShown = false; // reset so next tap works cleanly
-});
-
-// Also dismiss tooltip on touchmove (mobile drag after inspect tap)
-gridEl.addEventListener('touchmove', () => {
-  if (inspectJustShown) {
-    inspectJustShown = false;
-    hideTooltip();
-  }
-}, { passive: true });
-
-// Reset flag on touchend too
-document.addEventListener('touchend', () => {
-  inspectJustShown = false;
 });
 
 function paintCell(cellDiv) {
