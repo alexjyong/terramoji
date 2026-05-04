@@ -1,6 +1,6 @@
 # 🌍 TerraMoji
 
-> **Proof-of-concept: Locally Hosted Qwen3.6 26b + Spec Kit + LM STudio driven game design — from prompt to playable prototype.**
+> **Proof-of-concept: Locally Hosted Qwen3.6 26b + Spec Kit + LM Studio driven game design — from prompt to playable prototype.**
 
 TerraMoji is a SimEarth-inspired emoji planet simulation. Generate a random world, paint biomes with your mouse, watch creatures spawn and wander across terrain — all rendered as emoji on a 30×30 grid.
 
