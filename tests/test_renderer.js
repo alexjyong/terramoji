@@ -321,4 +321,64 @@ const {
   console.log('  T032-g inspect tooltip content: PASS');
 })();
 
+// --- T3: all 25 creature types display correctly in inspect tooltip ---
+(function testAllCreatureTypesInTooltip() {
+  // Verify that every creature type in CREATURE_TYPES can be placed on a
+  // compatible cell and will display its correct emoji + name in the tooltip.
+
+  // Create a minimal 1×25 grid so we can place one creature per cell
+  const orig = { ...state.grid };
+  state.grid.width = 1;
+  state.grid.height = Object.keys(CREATURE_TYPES).length;
+  state.grid.cells = [];
+
+  const creatureNames = Object.keys(CREATURE_TYPES);
+  for (let i = 0; i < creatureNames.length; i++) {
+    const name = creatureNames[i];
+    const ct = CREATURE_TYPES[name];
+    // Pick the first compatible biome for this creature
+    const biome = ct.compatibleBiomes[0];
+    const cell = { biome, creatures: [], civilization: null };
+    cell.creatures.push(createCreature(name, i, 0));
+    state.grid.cells[i] = [cell];
+  }
+
+  // Render the grid (creates DOM cells)
+  renderGrid();
+
+  let passCount = 0;
+  for (let i = 0; i < creatureNames.length; i++) {
+    const name = creatureNames[i];
+    const ct = CREATURE_TYPES[name];
+    const cellDiv = gridEl.children[i];
+
+    showInspectTooltip(i, 0, cellDiv);
+
+    // Tooltip must contain the creature emoji
+    assert.ok(
+      tooltipEl.innerHTML.includes(ct.emoji),
+      `Tooltip for ${name} should contain emoji ${ct.emoji}`
+    );
+
+    // Tooltip must contain the creature name (lowercase, as stored)
+    assert.ok(
+      tooltipEl.innerHTML.includes(name),
+      `Tooltip for ${name} should contain name "${name}"`
+    );
+
+    passCount++;
+  }
+
+  // Restore original grid
+  state.grid = orig;
+
+  assert.strictEqual(
+    passCount,
+    creatureNames.length,
+    `All ${creatureNames.length} creature types should display in tooltip`
+  );
+
+  console.log(`  T3 all ${creatureNames.length} creature types in tooltip: PASS`);
+})();
+
 console.log('\nAll renderer integration tests passed.');

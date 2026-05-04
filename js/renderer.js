@@ -24,15 +24,29 @@ function renderGrid() {
       div.dataset.col = c;
       div.dataset.biome = cell.biome; // CSS selector hook for biome styles
 
-      // Render priority: landmark > cactus > creature > nothing (base terrain)
+      // Render priority: landmark > civilization > cactus > creature > nothing
+      // When a civilization exists, its emoji is the main cell content;
+      // creatures appear as a small overlay instead.
       const landmark = BIOMES[cell.biome].landmark;
       const hasCreatures = cell.creatures && cell.creatures.length > 0;
-      // Use the first creature's emoji from the expanded roster (not the old BIOMES default)
       const creatureEmoji = hasCreatures ? cell.creatures[0].emoji : null;
+      const civEmoji = cell.civilization ? TECH_STAGES[cell.civilization.stage].emoji : null;
+      const unitEmoji = cell.unit ? cell.unit.emoji : null;
 
       if (landmark) {
         div.textContent = landmark;
-        // Overlay creature emoji centered on top of landmark
+        // Overlay creature emoji on landmark tiles
+        if (hasCreatures) {
+          const crSpan = document.createElement('span');
+          crSpan.className = 'creature-overlay';
+          crSpan.textContent = creatureEmoji;
+          div.appendChild(crSpan);
+        }
+      }
+      else if (civEmoji) {
+        // Civilization is the main content
+        div.textContent = civEmoji;
+        // Overlay creature emoji when civ and creatures coexist
         if (hasCreatures) {
           const crSpan = document.createElement('span');
           crSpan.className = 'creature-overlay';
@@ -49,6 +63,14 @@ function renderGrid() {
         div.textContent = creatureEmoji;
       }
       // No emoji on base terrain — CSS gradients/textures handle visuals
+
+      // Mobile unit overlay (top-left, small)
+      if (unitEmoji) {
+        const unitSpan = document.createElement('span');
+        unitSpan.className = 'unit-overlay';
+        unitSpan.textContent = unitEmoji;
+        div.appendChild(unitSpan);
+      }
 
       gridEl.appendChild(div);
     }
@@ -87,22 +109,39 @@ function showInspectTooltip(row, col, cellDiv) {
 
   // Civilization panel
   if (cell.civilization) {
-    html += `<div class="tooltip-section"><div class="tooltip-label">Civilization</div><div class="tooltip-civilization">🏛️ ${cell.civilization}</div></div>`;
+    const tech = TECH_STAGES[cell.civilization.stage];
+    const species = cell.civilization.species || 'Unknown';
+    html += `<div class="tooltip-section"><div class="tooltip-label">Civilization</div><div class="tooltip-civilization">${tech.emoji} ${species} — ${tech.name} (Stage ${cell.civilization.stage})</div></div>`;
   } else {
     html += `<div class="tooltip-section"><div class="tooltip-label">Civilization</div><div class="tooltip-civilization">none</div></div>`;
+  }
+
+  // Mobile unit panel
+  if (cell.unit) {
+    const unitTech = TECH_STAGES[cell.unit.stage];
+    html += `<div class="tooltip-section"><div class="tooltip-label">Mobile Unit</div><div class="tooltip-unit">${cell.unit.emoji} ${unitTech.name} unit</div></div>`;
   }
 
   html += '</div>';
   tooltipEl.innerHTML = html;
   tooltipEl.classList.remove('hidden');
 
-  // Position tooltip near the clicked cell
+  // Pause the game while inspecting
+  state.isPaused = true;
+
+  // Position tooltip centered on the clicked cell
   const rect = cellDiv.getBoundingClientRect();
   let top = rect.bottom + 8;
-  let left = rect.left;
+  let left = rect.left + rect.width / 2;
 
-  // Keep tooltip within viewport
+  // Measure tooltip, then center it horizontally
   const tooltipRect = tooltipEl.getBoundingClientRect();
+  if (tooltipRect.width > 0) {
+    left = left - tooltipRect.width / 2;
+  }
+
+  // Clamp within viewport
+  if (left < 8) left = 8;
   if (left + tooltipRect.width > window.innerWidth - 8) {
     left = window.innerWidth - tooltipRect.width - 8;
   }
@@ -116,4 +155,6 @@ function showInspectTooltip(row, col, cellDiv) {
 
 function hideTooltip() {
   tooltipEl.classList.add('hidden');
+  // Resume the game when tooltip is dismissed
+  state.isPaused = false;
 }

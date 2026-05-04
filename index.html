@@ -14,6 +14,10 @@
       <button id="btn-new-planet">🌍 New Planet</button>
       <button id="btn-pause">⏸️ Pause</button>
       <button id="btn-inspect" title="Inspect tile">🔍 Inspect</button>
+      <div class="civ-buttons">
+        <button id="btn-monolith" title="Create civilization (requires creatures)">🗿 Monolith</button>
+        <button id="btn-civ" title="Place civilization anywhere">🏠 Civ</button>
+      </div>
       <div class="biome-buttons">
         <button data-biome="water" title="Water">🌊</button>
         <button data-biome="grassland" title="Grassland">🌿</button>
@@ -25,6 +29,7 @@
       </div>
     </nav>
   </header>
+  <div id="status-bar" class="status-bar hidden"></div>
   <main>
     <div id="grid"></div>
     <div id="inspect-tooltip" class="inspect-tooltip hidden"></div>
