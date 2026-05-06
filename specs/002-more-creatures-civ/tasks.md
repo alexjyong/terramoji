@@ -197,7 +197,16 @@
 
 ## Phase 7: Integration & Tests
 
-- [ ] **T31** Add tests for civilization creation (monolith + manual)
+- [x] **T31** Add tests for civilization creation (monolith + manual)
+  - T31a: Monolith creates civ on tile with creatures (stage 0, captures species)
+  - T31b: Monolith rejects tile without creatures
+  - T31c: Monolith enforces one-per-planet guard
+  - T31d: Manual civ placement requires existing civilization
+  - T31e: Manual civ places at max existing stage
+  - T31f: Manual civ rejects occupied cell
+  - T31g: Civilization coexists with creatures on same tile
+  - T31h: Multiple manual placements create independent civilizations
+  - Also expanded test CREATURE_TYPES to full 25-creature roster, added `name` field to createCreature
   - _File: `tests/test_simulation.js`_
   - _Depends on: T6_
 

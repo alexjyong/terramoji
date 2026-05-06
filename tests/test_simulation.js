@@ -223,13 +223,46 @@ const POLE_ROWS = { top: 3, bottom: 3 };
 
 // --- Creature-Biome Compatibility (many-to-many, per data-model.md) ---
 const CREATURE_TYPES = {
-  fish:    { emoji: '🐟', compatibleBiomes: ['water'] },
-  cow:     { emoji: '🐄', compatibleBiomes: ['grassland', 'forest'] },
-  camel:   { emoji: '🐪', compatibleBiomes: ['desert'] },
-  goat:    { emoji: '🐐', compatibleBiomes: ['mountain', 'grassland'] },
-  deer:    { emoji: '🦌', compatibleBiomes: ['forest', 'grassland'] },
-  parrot:  { emoji: '🦜', compatibleBiomes: ['jungle', 'forest'] },
-  penguin: { emoji: '🐧', compatibleBiomes: ['ice'] },
+  // Water
+  fish:     { emoji: '🐟', compatibleBiomes: ['water'] },
+  octopus:  { emoji: '🐙', compatibleBiomes: ['water'] },
+  shark:    { emoji: '🦈', compatibleBiomes: ['water'] },
+  turtle:   { emoji: '🐢', compatibleBiomes: ['water', 'desert'] },
+  dolphin:  { emoji: '🐬', compatibleBiomes: ['water'] },
+
+  // Grassland
+  cow:      { emoji: '🐄', compatibleBiomes: ['grassland', 'forest'] },
+  horse:    { emoji: '🐴', compatibleBiomes: ['grassland'] },
+  sheep:    { emoji: '🐑', compatibleBiomes: ['grassland'] },
+  lion:     { emoji: '🦁', compatibleBiomes: ['grassland'] },
+  elephant: { emoji: '🐘', compatibleBiomes: ['grassland', 'forest'] },
+
+  // Desert
+  camel:    { emoji: '🐪', compatibleBiomes: ['desert'] },
+  scorpion: { emoji: '🦂', compatibleBiomes: ['desert'] },
+  lizard:   { emoji: '🦎', compatibleBiomes: ['desert'] },
+
+  // Mountain (+ shared with grassland/forest)
+  goat:     { emoji: '🐐', compatibleBiomes: ['mountain', 'grassland'] },
+  eagle:    { emoji: '🦅', compatibleBiomes: ['mountain', 'grassland'] },
+
+  // Forest (+ shared with grassland/jungle)
+  deer:     { emoji: '🦌', compatibleBiomes: ['forest', 'grassland'] },
+  fox:      { emoji: '🦊', compatibleBiomes: ['forest'] },
+  squirrel: { emoji: '🐿️', compatibleBiomes: ['forest'] },
+  boar:     { emoji: '🐗', compatibleBiomes: ['forest'] },
+  bear:     { emoji: '🐻', compatibleBiomes: ['forest', 'mountain'] },
+
+  // Jungle (+ shared with forest/desert)
+  parrot:   { emoji: '🦜', compatibleBiomes: ['jungle', 'forest'] },
+  monkey:   { emoji: '🐒', compatibleBiomes: ['jungle'] },
+  butterfly:{ emoji: '🦋', compatibleBiomes: ['jungle', 'forest', 'grassland'] },
+  snake:    { emoji: '🐍', compatibleBiomes: ['jungle', 'desert'] },
+
+  // Ice
+  penguin:  { emoji: '🐧', compatibleBiomes: ['ice'] },
+  polarbear:{ emoji: '🐻‍❄️', compatibleBiomes: ['ice'] },
+  seal:     { emoji: '🦭', compatibleBiomes: ['ice', 'water'] },
 };
 
 let creatureIdCounter = 0;
@@ -237,7 +270,7 @@ function createCreature(name, row, col) {
   const ct = CREATURE_TYPES[name];
   if (!ct) throw new Error(`Unknown creature type: ${name}`);
   creatureIdCounter++;
-  return { id: `c_${creatureIdCounter}`, emoji: ct.emoji, compatibleBiomes: [...ct.compatibleBiomes], row, col };
+  return { id: `c_${creatureIdCounter}`, name, emoji: ct.emoji, compatibleBiomes: [...ct.compatibleBiomes], row, col };
 }
 
 function totalCreatures(cells, width, height) {
@@ -440,3 +473,219 @@ function totalCreatures(cells, width, height) {
 })();
 
 console.log('\nAll simulation tests passed.');
+
+// ============================================================
+// T31: Civilization Creation Tests (Monolith + Manual)
+// ============================================================
+
+// --- Tech stages constant (mirrors simulation.js) ---
+const TECH_STAGES = [
+  { name: 'Stone',       emoji: '🛖' },
+  { name: 'Bronze',      emoji: '🛕' },
+  { name: 'Iron',        emoji: '🏰' },
+  { name: 'Industrial',  emoji: '🏭' },
+  { name: 'Atomic',      emoji: '☢️' },
+  { name: 'Information', emoji: '💻' },
+  { name: 'Nanotech',    emoji: '🔮' },
+];
+
+// --- Helper: build a test grid with controllable state ---
+function buildGrid(width, height, biome) {
+  const cells = [];
+  for (let r = 0; r < height; r++) {
+    cells[r] = [];
+    for (let c = 0; c < width; c++) {
+      cells[r][c] = { biome: biome || 'grassland', creatures: [], civilization: null, unit: null };
+    }
+  }
+  return cells;
+}
+
+// --- Helper: check if any cell has a civilization ---
+function hasAnyCiv(cells, width, height) {
+  for (let r = 0; r < height; r++) {
+    for (let c = 0; c < width; c++) {
+      if (cells[r][c].civilization) return true;
+    }
+  }
+  return false;
+}
+
+// --- Helper: find max civ stage on grid ---
+function maxCivStage(cells, width, height) {
+  let max = -1;
+  for (let r = 0; r < height; r++) {
+    for (let c = 0; c < width; c++) {
+      if (cells[r][c].civilization && cells[r][c].civilization.stage > max) {
+        max = cells[r][c].civilization.stage;
+      }
+    }
+  }
+  return max;
+}
+
+// --- Helper: replicate createCivilization logic for Node.js testing ---
+// Monolith mode: requires creatures on target cell, one-per-planet guard
+// Civ mode: requires existing civ somewhere, places at max stage, rejects if cell already has civ
+function createCivilizationMonolith(cells, width, height, row, col) {
+  const cell = cells[row][col];
+  // One-per-planet guard
+  if (hasAnyCiv(cells, width, height)) return { ok: false, reason: 'civ_exists' };
+  // Requires creatures
+  if (!cell.creatures || cell.creatures.length === 0) return { ok: false, reason: 'no_creatures' };
+  cell.civilization = { stage: 0, species: cell.creatures[0].name };
+  return { ok: true };
+}
+
+function createCivilizationManual(cells, width, height, row, col) {
+  const cell = cells[row][col];
+  // Requires existing civ somewhere
+  if (!hasAnyCiv(cells, width, height)) return { ok: false, reason: 'no_civ_exists' };
+  // Cell must not already have a civ
+  if (cell.civilization) return { ok: false, reason: 'cell_has_civ' };
+  const ms = maxCivStage(cells, width, height);
+  cell.civilization = { stage: ms };
+  return { ok: true };
+}
+
+// --- T31a: Monolith creates civilization on tile with creatures ---
+(function testMonolithCreatesCiv() {
+  creatureIdCounter = 0;
+  const cells = buildGrid(5, 5, 'grassland');
+  cells[2][2].creatures.push(createCreature('cow', 2, 2));
+
+  const res = createCivilizationMonolith(cells, 5, 5, 2, 2);
+  assert.strictEqual(res.ok, true, 'Monolith should succeed on tile with creatures');
+  assert.ok(cells[2][2].civilization, 'Cell should have civilization object');
+  assert.strictEqual(cells[2][2].civilization.stage, 0, 'New civ should be Stone age (stage 0)');
+  assert.strictEqual(cells[2][2].civilization.species, 'cow', 'Species should match first creature');
+
+  console.log('  T31a monolith creates civ on tile with creatures: PASS');
+})();
+
+// --- T31b: Monolith rejects tile without creatures ---
+(function testMonolithRejectsNoCreatures() {
+  creatureIdCounter = 0;
+  const cells = buildGrid(5, 5, 'grassland');
+  // (2,2) has no creatures
+  const res = createCivilizationMonolith(cells, 5, 5, 2, 2);
+  assert.strictEqual(res.ok, false, 'Monolith should fail on empty tile');
+  assert.strictEqual(res.reason, 'no_creatures', 'Failure reason should be no_creatures');
+  assert.strictEqual(cells[2][2].civilization, null, 'Cell should remain without civilization');
+
+  console.log('  T31b monolith rejects tile without creatures: PASS');
+})();
+
+// --- T31c: Monolith enforces one-per-planet guard ---
+(function testMonolithOnePerPlanet() {
+  creatureIdCounter = 0;
+  const cells = buildGrid(5, 5, 'grassland');
+  cells[2][2].creatures.push(createCreature('cow', 2, 2));
+  cells[1][1].creatures.push(createCreature('horse', 1, 1));
+
+  // First monolith succeeds
+  let res = createCivilizationMonolith(cells, 5, 5, 2, 2);
+  assert.strictEqual(res.ok, true, 'First monolith should succeed');
+
+  // Second monolith on a different tile with creatures must fail
+  res = createCivilizationMonolith(cells, 5, 5, 1, 1);
+  assert.strictEqual(res.ok, false, 'Second monolith should fail (one-per-planet)');
+  assert.strictEqual(res.reason, 'civ_exists', 'Failure reason should be civ_exists');
+  assert.strictEqual(cells[1][1].civilization, null, 'Second cell should remain without civ');
+
+  console.log('  T31c monolith one-per-planet guard: PASS');
+})();
+
+// --- T31d: Manual civ placement requires existing civilization ---
+(function testManualCivRequiresExisting() {
+  creatureIdCounter = 0;
+  const cells = buildGrid(5, 5, 'grassland');
+  // No civilization exists anywhere
+  const res = createCivilizationManual(cells, 5, 5, 2, 2);
+  assert.strictEqual(res.ok, false, 'Manual placement should fail without existing civ');
+  assert.strictEqual(res.reason, 'no_civ_exists', 'Failure reason should be no_civ_exists');
+
+  console.log('  T31d manual civ requires existing civilization: PASS');
+})();
+
+// --- T31e: Manual civ placement creates new city at max existing stage ---
+(function testManualCivPlacesAtMaxStage() {
+  creatureIdCounter = 0;
+  const cells = buildGrid(5, 5, 'grassland');
+
+  // Seed a Stone civ at (2,2)
+  cells[2][2].civilization = { stage: 0 };
+
+  // Manually place a new city at (3,3)
+  let res = createCivilizationManual(cells, 5, 5, 3, 3);
+  assert.strictEqual(res.ok, true, 'Manual placement should succeed');
+  assert.strictEqual(cells[3][3].civilization.stage, 0, 'New city should match max stage (0)');
+
+  // Advance the original civ to Bronze (stage 1)
+  cells[2][2].civilization.stage = 1;
+
+  // Place another city — should be at stage 1
+  res = createCivilizationManual(cells, 5, 5, 4, 4);
+  assert.strictEqual(res.ok, true, 'Second manual placement should succeed');
+  assert.strictEqual(cells[4][4].civilization.stage, 1, 'New city should match max stage (1)');
+
+  console.log('  T31e manual civ places at max existing stage: PASS');
+})();
+
+// --- T31f: Manual civ rejects cell that already has a civilization ---
+(function testManualCivRejectsOccupiedCell() {
+  creatureIdCounter = 0;
+  const cells = buildGrid(5, 5, 'grassland');
+  cells[2][2].civilization = { stage: 0 };
+
+  // Try to place on the same cell
+  const res = createCivilizationManual(cells, 5, 5, 2, 2);
+  assert.strictEqual(res.ok, false, 'Should reject placing civ on occupied cell');
+  assert.strictEqual(res.reason, 'cell_has_civ', 'Failure reason should be cell_has_civ');
+
+  console.log('  T31f manual civ rejects occupied cell: PASS');
+})();
+
+// --- T31g: Civilization coexists with creatures on same tile ---
+(function testCivCoexistsWithCreatures() {
+  creatureIdCounter = 0;
+  const cells = buildGrid(5, 5, 'grassland');
+  cells[2][2].creatures.push(createCreature('cow', 2, 2));
+  cells[2][2].creatures.push(createCreature('horse', 2, 2));
+
+  createCivilizationMonolith(cells, 5, 5, 2, 2);
+
+  assert.ok(cells[2][2].civilization, 'Civ should exist');
+  assert.strictEqual(cells[2][2].creatures.length, 2, 'Creatures should still be present');
+  assert.strictEqual(cells[2][2].creatures[0].emoji, '🐄', 'Cow should remain');
+  assert.strictEqual(cells[2][2].creatures[1].emoji, '🐴', 'Horse should remain');
+
+  console.log('  T31g civilization coexists with creatures: PASS');
+})();
+
+// --- T31h: Multiple manual placements create independent civilizations ---
+(function testMultipleManualPlacements() {
+  creatureIdCounter = 0;
+  const cells = buildGrid(5, 5, 'grassland');
+
+  // Seed first civ
+  cells[2][2].civilization = { stage: 0 };
+
+  // Place cities on multiple tiles
+  createCivilizationManual(cells, 5, 5, 1, 1);
+  createCivilizationManual(cells, 5, 5, 3, 3);
+  createCivilizationManual(cells, 5, 5, 0, 0);
+
+  // Count civilizations
+  let civCount = 0;
+  for (let r = 0; r < 5; r++) {
+    for (let c = 0; c < 5; c++) {
+      if (cells[r][c].civilization) civCount++;
+    }
+  }
+  assert.strictEqual(civCount, 4, 'Should have 4 civilizations total');
+
+  console.log('  T31h multiple manual placements create independent civs: PASS');
+})();
+
+console.log('\nAll simulation tests passed (including T31 civilization creation).');
