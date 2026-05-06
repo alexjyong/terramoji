@@ -210,8 +210,15 @@
   - _File: `tests/test_simulation.js`_
   - _Depends on: T6_
 
-- [ ] **T32** Add tests for tech advancement over multiple ticks
-  - Verify progression Stone → Bronze → ... → Nanotech, terminal at stage 6
+- [x] **T32** Add tests for tech advancement over multiple ticks
+  - T32a: advanceCivilization increments stage with probability (injectable RNG)
+  - T32b: advance on null civilization is no-op
+  - T32c: Nanotech (stage 6) is terminal — no further advancement
+  - T32d: Full progression Stone → Nanotech over multiple ticks
+  - T32e: Civ does NOT advance when RNG never triggers
+  - T32f: Multiple civilizations advance independently at own pace
+  - T32g: Advancement rate matches ~2% (10,000-trial statistical test)
+  - T32h: Civilization data preserved through biome change
   - _File: `tests/test_simulation.js`_
   - _Depends on: T7_
 

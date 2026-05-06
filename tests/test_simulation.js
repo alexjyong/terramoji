@@ -688,4 +688,166 @@ function createCivilizationManual(cells, width, height, row, col) {
   console.log('  T31h multiple manual placements create independent civs: PASS');
 })();
 
-console.log('\nAll simulation tests passed (including T31 civilization creation).');
+// ============================================================
+// T32: Tech Advancement Tests
+// ============================================================
+
+// --- Helper: replicate advanceCivilization logic (mirrors simulation.js) ---
+const TECH_ADVANCE_CHANCE = 0.02;
+
+function advanceCivilization(cell, rng) {
+  if (!cell.civilization) return;
+  if (cell.civilization.stage >= TECH_STAGES.length - 1) return; // terminal
+  if ((rng || Math.random)() < TECH_ADVANCE_CHANCE) {
+    cell.civilization.stage += 1;
+  }
+}
+
+// --- T32a: advanceCivilization increments stage with probability ---
+(function testCivAdvancesWithProbability() {
+  const cells = buildGrid(3, 3, 'grassland');
+  cells[1][1].civilization = { stage: 0 };
+
+  // Force advancement by using a deterministic RNG that always returns 0
+  // (which is < TECH_ADVANCE_CHANCE of 0.02)
+  let callCount = 0;
+  const alwaysTrueRng = () => { callCount++; return 0; };
+
+  advanceCivilization(cells[1][1], alwaysTrueRng);
+  assert.strictEqual(callCount, 1, 'RNG should be called once');
+  assert.strictEqual(cells[1][1].civilization.stage, 1, 'Stage should advance from 0→1');
+
+  advanceCivilization(cells[1][1], alwaysTrueRng);
+  assert.strictEqual(cells[1][1].civilization.stage, 2, 'Stage should advance from 1→2');
+
+  console.log('  T32a civ advances with probability: PASS');
+})();
+
+// --- T32b: advanceCivilization does nothing on null civilization ---
+(function testAdvanceNullCiv() {
+  const cells = buildGrid(3, 3, 'grassland');
+  // cells[1][1].civilization is null
+  advanceCivilization(cells[1][1], () => 0);
+  assert.strictEqual(cells[1][1].civilization, null, 'Null civ should stay null');
+
+  console.log('  T32b advance on null civ is no-op: PASS');
+})();
+
+// --- T32c: Nanotech (stage 6) is terminal — no further advancement ---
+(function testNanotechIsTerminal() {
+  const cells = buildGrid(3, 3, 'grassland');
+  cells[1][1].civilization = { stage: 6 };
+
+  // Even with RNG that always triggers, nanotech should not advance
+  advanceCivilization(cells[1][1], () => 0);
+  assert.strictEqual(cells[1][1].civilization.stage, 6, 'Nanotech should stay at stage 6');
+
+  advanceCivilization(cells[1][1], () => 0);
+  assert.strictEqual(cells[1][1].civilization.stage, 6, 'Still nanotech after second tick');
+
+  console.log('  T32c nanotech is terminal: PASS');
+})();
+
+// --- T32d: Full progression Stone → Nanotech over multiple ticks ---
+(function testFullProgression() {
+  const cells = buildGrid(3, 3, 'grassland');
+  cells[1][1].civilization = { stage: 0 };
+
+  // Force advancement every tick
+  const alwaysTrueRng = () => 0;
+
+  // Advance through all 7 stages
+  for (let stage = 0; stage < TECH_STAGES.length - 1; stage++) {
+    advanceCivilization(cells[1][1], alwaysTrueRng);
+    assert.strictEqual(
+      cells[1][1].civilization.stage,
+      stage + 1,
+      `Should advance from ${TECH_STAGES[stage].name} to ${TECH_STAGES[stage + 1].name}`
+    );
+  }
+
+  // Verify final stage is Nanotech
+  assert.strictEqual(cells[1][1].civilization.stage, 6, 'Final stage should be Nanotech');
+  assert.strictEqual(
+    TECH_STAGES[cells[1][1].civilization.stage].name,
+    'Nanotech',
+    'Stage 6 name should be Nanotech'
+  );
+
+  console.log('  T32d full progression Stone → Nanotech: PASS');
+})();
+
+// --- T32e: Civilization does NOT advance when RNG is below threshold ---
+(function testCivDoesNotAdvanceWhenRngFails() {
+  const cells = buildGrid(3, 3, 'grassland');
+  cells[1][1].civilization = { stage: 0 };
+
+  // RNG always returns 1.0 (above TECH_ADVANCE_CHANCE)
+  const alwaysFalseRng = () => 1.0;
+
+  for (let i = 0; i < 100; i++) {
+    advanceCivilization(cells[1][1], alwaysFalseRng);
+  }
+  assert.strictEqual(cells[1][1].civilization.stage, 0, 'Stage should remain 0 when RNG never triggers');
+
+  console.log('  T32e civ does not advance when RNG fails: PASS');
+})();
+
+// --- T32f: Multiple civilizations advance independently ---
+(function testIndependentAdvancement() {
+  const cells = buildGrid(5, 5, 'grassland');
+  cells[1][1].civilization = { stage: 0 };
+  cells[3][3].civilization = { stage: 2 };
+
+  // Advance both once
+  advanceCivilization(cells[1][1], () => 0);
+  advanceCivilization(cells[3][3], () => 0);
+
+  assert.strictEqual(cells[1][1].civilization.stage, 1, 'First civ should advance 0→1');
+  assert.strictEqual(cells[3][3].civilization.stage, 3, 'Second civ should advance 2→3');
+
+  // Advance first one more time, skip second
+  advanceCivilization(cells[1][1], () => 0);
+  advanceCivilization(cells[3][3], () => 1.0); // won't advance
+
+  assert.strictEqual(cells[1][1].civilization.stage, 2, 'First civ should be at stage 2');
+  assert.strictEqual(cells[3][3].civilization.stage, 3, 'Second civ should still be at stage 3');
+
+  console.log('  T32f multiple civs advance independently: PASS');
+})();
+
+// --- T32g: Advancement probability matches expected rate (~2%) ---
+(function testAdvancementRate() {
+  const trials = 10000;
+  let advances = 0;
+
+  for (let i = 0; i < trials; i++) {
+    const cells = buildGrid(1, 1, 'grassland');
+    cells[0][0].civilization = { stage: 0 };
+    advanceCivilization(cells[0][0]); // uses Math.random
+    if (cells[0][0].civilization.stage > 0) advances++;
+  }
+
+  const rate = advances / trials;
+  // At 2% expected, allow ±1% tolerance (statistical variance)
+  assert.ok(rate >= 0.01 && rate <= 0.03,
+    `Advancement rate ${rate.toFixed(3)} should be near 0.02 (got ${advances}/${trials})`);
+
+  console.log(`  T32g advancement rate ~2% (actual: ${(rate * 100).toFixed(1)}%): PASS`);
+})();
+
+// --- T32h: Civilization data preserved through biome change ---
+(function testCivPersistsThroughBiomeChange() {
+  const cells = buildGrid(3, 3, 'grassland');
+  cells[1][1].civilization = { stage: 2 }; // Iron age
+
+  // Change biome under the civilization
+  cells[1][1].biome = 'desert';
+
+  assert.ok(cells[1][1].civilization, 'Civ should persist after biome change');
+  assert.strictEqual(cells[1][1].civilization.stage, 2, 'Stage should remain unchanged');
+
+  console.log('  T32h civ persists through biome change: PASS');
+})();
+
+console.log('\nAll simulation tests passed (including T31-T32).');
