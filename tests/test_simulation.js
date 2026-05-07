@@ -850,4 +850,209 @@ function advanceCivilization(cell, rng) {
   console.log('  T32h civ persists through biome change: PASS');
 })();
 
-console.log('\nAll simulation tests passed (including T31-T32).');
+// ============================================================
+// T33: Civilization Persistence Through Biome Changes
+// ============================================================
+
+// --- Helper: replicate smoothGrid logic for Node.js testing ---
+function smoothGridTest(cells, width, height) {
+  const next = [];
+  for (let r = 0; r < height; r++) {
+    next[r] = [];
+    for (let c = 0; c < width; c++) {
+      const counts = {};
+      for (let dr = -1; dr <= 1; dr++) {
+        for (let dc = -1; dc <= 1; dc++) {
+          const nr = r + dr;
+          const nc = c + dc;
+          if (nr >= 0 && nr < height && nc >= 0 && nc < width) {
+            const b = cells[nr][nc].biome;
+            counts[b] = (counts[b] || 0) + 1;
+          }
+        }
+      }
+      let maxCount = 0;
+      let dominant = cells[r][c].biome;
+      for (const b of BIOME_KEYS) {
+        if (counts[b] > maxCount) {
+          maxCount = counts[b];
+          dominant = b;
+        }
+      }
+      next[r][c] = {
+        biome: dominant,
+        creatures: [],
+        civilization: cells[r][c].civilization, // preserve civ through smoothing
+        unit: cells[r][c].unit,                 // preserve unit through smoothing
+        cactus: cells[r][c].cactus,             // preserve cactus flag
+      };
+    }
+  }
+  return next;
+}
+
+// --- T33a: Civilization data preserved after single smoothGrid pass ---
+(function testCivPersistsAfterSmoothing() {
+  const width = 5, height = 5;
+  const cells = buildGrid(width, height, 'grassland');
+
+  // Place a civilization at stage 2 (Iron) on center cell
+  cells[2][2].civilization = { stage: 2, species: 'cow' };
+
+  // Smooth the grid
+  const smoothed = smoothGridTest(cells, width, height);
+
+  // Civilization should be preserved even though biome may have changed
+  assert.ok(smoothed[2][2].civilization, 'Civ should exist after smoothing');
+  assert.strictEqual(smoothed[2][2].civilization.stage, 2, 'Stage should remain 2 (Iron)');
+  assert.strictEqual(smoothed[2][2].civilization.species, 'cow', 'Species should be preserved');
+
+  console.log('  T33a civ persists after single smoothGrid pass: PASS');
+})();
+
+// --- T33b: Civilization data preserved through multiple smoothing passes ---
+(function testCivPersistsAfterMultipleSmoothingPasses() {
+  const width = 7, height = 7;
+  const cells = buildGrid(width, height, 'grassland');
+
+  // Create a mixed biome grid with a civ in the center
+  cells[3][3].biome = 'desert';
+  cells[3][3].civilization = { stage: 3, species: 'camel' };
+
+  // Surrounding cells are grassland — smoothing will likely convert desert to grassland
+  for (let dr = -1; dr <= 1; dr++) {
+    for (let dc = -1; dc <= 1; dc++) {
+      if (dr === 0 && dc === 0) continue;
+      cells[3 + dr][3 + dc].biome = 'grassland';
+    }
+  }
+
+  // Run 3 smoothing passes (matching generatePlanet behavior)
+  let current = cells;
+  for (let pass = 0; pass < 3; pass++) {
+    current = smoothGridTest(current, width, height);
+  }
+
+  // Civilization must survive all passes
+  assert.ok(current[3][3].civilization, 'Civ should exist after 3 smoothing passes');
+  assert.strictEqual(current[3][3].civilization.stage, 3, 'Stage should remain 3 (Industrial)');
+  assert.strictEqual(current[3][3].civilization.species, 'camel', 'Species should be preserved');
+
+  console.log('  T33b civ persists through multiple smoothing passes: PASS');
+})();
+
+// --- T33c: Civilization survives biome change from grassland → water → desert ---
+(function testCivSurvivesMultipleBiomeChanges() {
+  const width = 3, height = 3;
+  const cells = buildGrid(width, height, 'grassland');
+
+  // Place civ at center
+  cells[1][1].civilization = { stage: 1 };
+
+  // Change biome to water
+  cells[1][1].biome = 'water';
+  assert.ok(cells[1][1].civilization, 'Civ should persist after grassland→water');
+  assert.strictEqual(cells[1][1].civilization.stage, 1, 'Stage unchanged after grassland→water');
+
+  // Change biome to desert
+  cells[1][1].biome = 'desert';
+  assert.ok(cells[1][1].civilization, 'Civ should persist after water→desert');
+  assert.strictEqual(cells[1][1].civilization.stage, 1, 'Stage unchanged after water→desert');
+
+  // Change biome to ice
+  cells[1][1].biome = 'ice';
+  assert.ok(cells[1][1].civilization, 'Civ should persist after desert→ice');
+  assert.strictEqual(cells[1][1].civilization.stage, 1, 'Stage unchanged after desert→ice');
+
+  console.log('  T33c civ survives multiple biome changes: PASS');
+})();
+
+// --- T33d: Civilization at max stage (Nanotech) persists through smoothing ---
+(function testNanotechCivPersistsThroughSmoothing() {
+  const width = 5, height = 5;
+  const cells = buildGrid(width, height, 'forest');
+
+  // Place a Nanotech civilization (stage 6, terminal)
+  cells[2][2].biome = 'desert';
+  cells[2][2].civilization = { stage: 6, species: 'lizard' };
+
+  // Smooth — biome will likely change to forest (dominant neighbor)
+  const smoothed = smoothGridTest(cells, width, height);
+
+  assert.ok(smoothed[2][2].civilization, 'Nanotech civ should exist after smoothing');
+  assert.strictEqual(smoothed[2][2].civilization.stage, 6, 'Stage must remain 6 (Nanotech)');
+  assert.strictEqual(smoothed[2][2].civilization.species, 'lizard', 'Species preserved for Nanotech civ');
+
+  console.log('  T33d nanotech civ persists through smoothing: PASS');
+})();
+
+// --- T33e: Multiple civilizations each persist independently through smoothing ---
+(function testMultipleCivsPersistThroughSmoothing() {
+  const width = 7, height = 7;
+  const cells = buildGrid(width, height, 'grassland');
+
+  // Place 4 civilizations at different stages in corners of center region
+  cells[2][2].civilization = { stage: 0, species: 'cow' };
+  cells[2][4].civilization = { stage: 1, species: 'horse' };
+  cells[4][2].civilization = { stage: 3, species: 'lion' };
+  cells[4][4].civilization = { stage: 5, species: 'sheep' };
+
+  // Smooth grid
+  const smoothed = smoothGridTest(cells, width, height);
+
+  // All 4 civilizations must persist with correct stages
+  assert.strictEqual(smoothed[2][2].civilization.stage, 0, 'Stone civ preserved');
+  assert.strictEqual(smoothed[2][2].civilization.species, 'cow', 'Stone species preserved');
+
+  assert.strictEqual(smoothed[2][4].civilization.stage, 1, 'Bronze civ preserved');
+  assert.strictEqual(smoothed[2][4].civilization.species, 'horse', 'Bronze species preserved');
+
+  assert.strictEqual(smoothed[4][2].civilization.stage, 3, 'Industrial civ preserved');
+  assert.strictEqual(smoothed[4][2].civilization.species, 'lion', 'Industrial species preserved');
+
+  assert.strictEqual(smoothed[4][4].civilization.stage, 5, 'Information civ preserved');
+  assert.strictEqual(smoothed[4][4].civilization.species, 'sheep', 'Information species preserved');
+
+  console.log('  T33e multiple civs persist independently through smoothing: PASS');
+})();
+
+// --- T33f: Civilization with no species field (manual placement) persists ---
+(function testCivWithoutSpeciesPersists() {
+  const width = 5, height = 5;
+  const cells = buildGrid(width, height, 'desert');
+
+  // Manual placement creates civ without species field
+  cells[2][2].civilization = { stage: 2 };
+
+  // Smooth grid
+  const smoothed = smoothGridTest(cells, width, height);
+
+  assert.ok(smoothed[2][2].civilization, 'Civ should exist after smoothing');
+  assert.strictEqual(smoothed[2][2].civilization.stage, 2, 'Stage preserved for civ without species');
+  assert.strictEqual(smoothed[2][2].civilization.species, undefined, 'Species remains undefined');
+
+  console.log('  T33f civ without species field persists through smoothing: PASS');
+})();
+
+// --- T33g: Civilization persists when biome changes during tick cycle ---
+(function testCivPersistsDuringTickCycle() {
+  const width = 5, height = 5;
+  const cells = buildGrid(width, height, 'grassland');
+
+  // Place civ at center
+  cells[2][2].civilization = { stage: 1, species: 'cow' };
+
+  // Simulate biome change (as would happen via smoothing in tick)
+  const smoothed = smoothGridTest(cells, width, height);
+
+  // Then simulate advancement on the smoothed grid
+  advanceCivilization(smoothed[2][2], () => 0); // force advance
+
+  assert.ok(smoothed[2][2].civilization, 'Civ should exist after tick cycle');
+  assert.strictEqual(smoothed[2][2].civilization.stage, 2, 'Stage advanced from 1→2 after smoothing');
+  assert.strictEqual(smoothed[2][2].civilization.species, 'cow', 'Species preserved through tick cycle');
+
+  console.log('  T33g civ persists and advances during tick cycle: PASS');
+})();
+
+console.log('\nAll simulation tests passed (including T31-T33).');

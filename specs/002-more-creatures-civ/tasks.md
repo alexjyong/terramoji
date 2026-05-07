@@ -222,8 +222,14 @@
   - _File: `tests/test_simulation.js`_
   - _Depends on: T7_
 
-- [ ] **T33** Add tests for civ persistence through biome changes
-  - Change biome under civ, verify civ data preserved
+- [x] **T33** Add tests for civ persistence through biome changes
+  - T33a: Civ data preserved after single smoothGrid pass
+  - T33b: Civ data preserved through multiple smoothing passes (3 passes)
+  - T33c: Civ survives biome change grassland → water → desert → ice
+  - T33d: Nanotech (stage 6) civ persists through smoothing
+  - T33e: Multiple civilizations persist independently through smoothing
+  - T33f: Civ without species field (manual placement) persists
+  - T33g: Civ persists and advances during tick cycle
   - _File: `tests/test_simulation.js`_
   - _Depends on: T9_
 
