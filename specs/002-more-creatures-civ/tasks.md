@@ -237,10 +237,10 @@
   - _File: `tests/test_simulation.js`_
   - _Depends on: T20, T21, T22_
 
-  - [ ] **T34a** Test `spawnUnit()` — verify unit created with correct emoji/stage/movementType on civ cell
-  - [ ] **T34b** Test `spawnUnit()` — verify no spawn when unit cap (MAX_UNITS) reached
-  - [ ] **T34c** Test `spawnUnit()` — verify sea unit spawned on water biome, land unit on land biome
-  - [ ] **T34d** Test `moveUnits()` — verify unit moves to adjacent cell
+  - [x] **T34a** Test `spawnUnit()` — verify unit created with correct emoji/stage/movementType on civ cell
+  - [x] **T34b** Test `spawnUnit()` — verify no spawn when unit cap (MAX_UNITS) reached
+  - [x] **T34c** Test `spawnUnit()` — verify sea unit spawned on water biome, land unit on land biome
+  - [x] **T34d** Test `moveUnits()` — verify unit moves to adjacent cell
   - [ ] **T34e** Test `moveUnits()` — verify land unit cannot enter water cell
   - [ ] **T34f** Test `moveUnits()` — verify sea unit cannot enter land cell
   - [ ] **T34g** Test `moveUnits()` — verify air unit can cross any terrain

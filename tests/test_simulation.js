@@ -1055,4 +1055,327 @@ function smoothGridTest(cells, width, height) {
   console.log('  T33g civ persists and advances during tick cycle: PASS');
 })();
 
-console.log('\nAll simulation tests passed (including T31-T33).');
+// ============================================================
+// T34: Unit Spawning, Movement, Terrain Restrictions, and Settling Tests
+// ============================================================
+
+// --- UNIT_TYPES mapping (mirrors simulation.js) ---
+const UNIT_TYPES = {
+  0: { land: { emoji: '🚶', movementType: 'land' } },
+  1: { land: { emoji: '🏇', movementType: 'land' }, sea: { emoji: '🛶', movementType: 'sea' } },
+  2: { land: { emoji: '🐪', movementType: 'land' }, sea: { emoji: '⛵', movementType: 'sea' } },
+  3: { land: { emoji: '🚂', movementType: 'land' }, sea: { emoji: '🚢', movementType: 'sea' } },
+  4: { land: { emoji: '✈️', movementType: 'air' }, sea: { emoji: '✈️', movementType: 'air' } },
+  5: { land: { emoji: '✈️', movementType: 'air' }, sea: { emoji: '✈️', movementType: 'air' } },
+};
+
+const UNIT_SPAWN_CHANCE_TEST = 0.05;
+const MAX_UNITS_TEST = 20;
+const UNIT_WANDER_TICKS_TEST = 8;
+
+// --- Helper: count active units on grid ---
+function countActiveUnitsTest(cells, width, height) {
+  let count = 0;
+  for (let r = 0; r < height; r++) {
+    for (let c = 0; c < width; c++) {
+      if (cells[r][c].unit) count++;
+    }
+  }
+  return count;
+}
+
+// --- Helper: replicate spawnUnit logic for Node.js testing ---
+function spawnUnitTest(cells, width, height, row, col) {
+  const cell = cells[row][col];
+  if (!cell.civilization || cell.civilization.stage > 5) return false; // nanotech doesn't spawn
+  if (countActiveUnitsTest(cells, width, height) >= MAX_UNITS_TEST) return false;
+
+  const stage = cell.civilization.stage;
+  const unitDef = UNIT_TYPES[stage];
+  if (!unitDef) return false;
+
+  // Pick land or sea unit based on current cell biome
+  const isWater = cell.biome === 'water';
+  let chosen;
+  if (isWater && unitDef.sea) {
+    chosen = unitDef.sea;
+  } else {
+    chosen = unitDef.land;
+  }
+
+  cell.unit = {
+    emoji: chosen.emoji,
+    stage: stage,
+    movementType: chosen.movementType,
+    row: row,
+    col: col,
+    wanderLeft: UNIT_WANDER_TICKS_TEST,
+    restTicks: 1,
+  };
+  return true;
+}
+
+// --- T34a: spawnUnit creates unit with correct emoji/stage/movementType on civ cell ---
+(function testSpawnUnitCreatesUnit() {
+  const cells = buildGrid(5, 5, 'grassland');
+
+  // Place a Stone age (stage 0) civilization — only has land units
+  cells[2][2].civilization = { stage: 0 };
+
+  const res = spawnUnitTest(cells, 5, 5, 2, 2);
+  assert.strictEqual(res, true, 'spawnUnit should succeed on civ cell');
+  assert.ok(cells[2][2].unit, 'Cell should have a unit object');
+  assert.strictEqual(cells[2][2].unit.emoji, '🚶', 'Stone age unit should be 🚶');
+  assert.strictEqual(cells[2][2].unit.stage, 0, 'Unit stage should match civ stage 0');
+  assert.strictEqual(cells[2][2].unit.movementType, 'land', 'Stone age unit should be land type');
+  assert.strictEqual(cells[2][2].unit.wanderLeft, UNIT_WANDER_TICKS_TEST, 'Unit should have wander ticks set');
+  assert.strictEqual(cells[2][2].unit.restTicks, 1, 'Unit should rest 1 tick on spawn');
+
+  // Test Bronze age (stage 1) — has both land and sea units
+  const cells2 = buildGrid(5, 5, 'grassland');
+  cells2[2][2].civilization = { stage: 1 };
+  spawnUnitTest(cells2, 5, 5, 2, 2);
+  assert.strictEqual(cells2[2][2].unit.emoji, '🏇', 'Bronze land unit should be 🏇');
+  assert.strictEqual(cells2[2][2].unit.movementType, 'land', 'Bronze on grassland should be land');
+  assert.strictEqual(cells2[2][2].unit.stage, 1, 'Unit stage should be 1');
+
+  // Test Atomic age (stage 4) — air units
+  const cells3 = buildGrid(5, 5, 'grassland');
+  cells3[2][2].civilization = { stage: 4 };
+  spawnUnitTest(cells3, 5, 5, 2, 2);
+  assert.strictEqual(cells3[2][2].unit.emoji, '✈️', 'Atomic unit should be ✈️');
+  assert.strictEqual(cells3[2][2].unit.movementType, 'air', 'Atomic unit should be air type');
+
+  console.log('  T34a spawnUnit creates unit with correct emoji/stage/movementType: PASS');
+})();
+
+// --- T34b: spawnUnit refuses when unit cap (MAX_UNITS) is reached ---
+(function testSpawnUnitRespectsCap() {
+  const width = 5, height = 5;
+  const cells = buildGrid(width, height, 'grassland');
+
+  // Place civilizations everywhere
+  for (let r = 0; r < height; r++) {
+    for (let c = 0; c < width; c++) {
+      cells[r][c].civilization = { stage: 0 };
+    }
+  }
+
+  // Fill the grid with units until MAX_UNITS is reached
+  let spawnCount = 0;
+  for (let r = 0; r < height; r++) {
+    for (let c = 0; c < width; c++) {
+      if (countActiveUnitsTest(cells, width, height) < MAX_UNITS_TEST) {
+        if (spawnUnitTest(cells, width, height, r, c)) {
+          spawnCount++;
+        }
+      }
+    }
+  }
+
+  // Verify we reached the cap
+  assert.strictEqual(countActiveUnitsTest(cells, width, height), MAX_UNITS_TEST,
+    `Should have exactly MAX_UNITS (${MAX_UNITS_TEST}) units on grid`);
+
+  // Now try to spawn more — should all fail
+  let failCount = 0;
+  for (let r = 0; r < height; r++) {
+    for (let c = 0; c < width; c++) {
+      const res = spawnUnitTest(cells, width, height, r, c);
+      if (!res) failCount++;
+    }
+  }
+
+  // At least some cells should have no unit (25 cells, cap is 20) so those spawns should fail due to cap
+  assert.ok(failCount > 0, 'Some spawn attempts should fail when cap is reached');
+
+  // Verify count didn't change after failed spawns
+  assert.strictEqual(countActiveUnitsTest(cells, width, height), MAX_UNITS_TEST,
+    `Unit count should remain at cap (${MAX_UNITS_TEST}) after failed spawns`);
+
+  console.log('  T34b spawnUnit refuses when MAX_UNITS cap reached: PASS');
+})();
+
+// --- T34c: spawnUnit spawns sea unit on water biome, land unit on land biome ---
+(function testSpawnUnitBiomeSelection() {
+  // Test 1: Bronze (stage 1) on water → sea unit 🛶
+  const cells1 = buildGrid(5, 5, 'water');
+  cells1[2][2].civilization = { stage: 1 };
+  spawnUnitTest(cells1, 5, 5, 2, 2);
+  assert.strictEqual(cells1[2][2].unit.emoji, '🛶', 'Bronze on water should spawn sea unit 🛶');
+  assert.strictEqual(cells1[2][2].unit.movementType, 'sea', 'Bronze on water should be sea movementType');
+
+  // Test 2: Bronze (stage 1) on grassland → land unit 🏇
+  const cells2 = buildGrid(5, 5, 'grassland');
+  cells2[2][2].civilization = { stage: 1 };
+  spawnUnitTest(cells2, 5, 5, 2, 2);
+  assert.strictEqual(cells2[2][2].unit.emoji, '🏇', 'Bronze on grassland should spawn land unit 🏇');
+  assert.strictEqual(cells2[2][2].unit.movementType, 'land', 'Bronze on grassland should be land movementType');
+
+  // Test 3: Iron (stage 2) on water → sea unit ⛵
+  const cells3 = buildGrid(5, 5, 'water');
+  cells3[2][2].civilization = { stage: 2 };
+  spawnUnitTest(cells3, 5, 5, 2, 2);
+  assert.strictEqual(cells3[2][2].unit.emoji, '⛵', 'Iron on water should spawn sea unit ⛵');
+  assert.strictEqual(cells3[2][2].unit.movementType, 'sea', 'Iron on water should be sea movementType');
+
+  // Test 4: Iron (stage 2) on desert → land unit 🐪
+  const cells4 = buildGrid(5, 5, 'desert');
+  cells4[2][2].civilization = { stage: 2 };
+  spawnUnitTest(cells4, 5, 5, 2, 2);
+  assert.strictEqual(cells4[2][2].unit.emoji, '🐪', 'Iron on desert should spawn land unit 🐪');
+  assert.strictEqual(cells4[2][2].unit.movementType, 'land', 'Iron on desert should be land movementType');
+
+  // Test 5: Stone (stage 0) on water → still spawns land unit 🚶 (no sea definition for stage 0)
+  const cells5 = buildGrid(5, 5, 'water');
+  cells5[2][2].civilization = { stage: 0 };
+  spawnUnitTest(cells5, 5, 5, 2, 2);
+  assert.strictEqual(cells5[2][2].unit.emoji, '🚶', 'Stone on water should spawn land unit 🚶 (no sea def)');
+  assert.strictEqual(cells5[2][2].unit.movementType, 'land', 'Stone on water should be land movementType');
+
+  // Test 6: Atomic (stage 4) on water → air unit ✈️ (same for both land/sea at this stage)
+  const cells6 = buildGrid(5, 5, 'water');
+  cells6[2][2].civilization = { stage: 4 };
+  spawnUnitTest(cells6, 5, 5, 2, 2);
+  assert.strictEqual(cells6[2][2].unit.emoji, '✈️', 'Atomic on water should spawn air unit ✈️');
+  assert.strictEqual(cells6[2][2].unit.movementType, 'air', 'Atomic on water should be air movementType');
+
+  // Test 7: Atomic (stage 4) on grassland → air unit ✈️
+  const cells7 = buildGrid(5, 5, 'grassland');
+  cells7[2][2].civilization = { stage: 4 };
+  spawnUnitTest(cells7, 5, 5, 2, 2);
+  assert.strictEqual(cells7[2][2].unit.emoji, '✈️', 'Atomic on grassland should spawn air unit ✈️');
+  assert.strictEqual(cells7[2][2].unit.movementType, 'air', 'Atomic on grassland should be air movementType');
+
+  console.log('  T34c spawnUnit spawns sea unit on water, land unit on land: PASS');
+})();
+
+// --- Helper: replicate moveUnits logic for Node.js testing with injectable RNG ---
+function moveUnitsTest(cells, width, height, rng) {
+  const random = rng || Math.random;
+
+  // Collect all units
+  const allUnits = [];
+  for (let r = 0; r < height; r++) {
+    for (let c = 0; c < width; c++) {
+      if (cells[r][c].unit) {
+        allUnits.push({ unit: cells[r][c].unit, fromR: r, fromC: c });
+        cells[r][c].unit = null; // clear — reassign below
+      }
+    }
+  }
+
+  // 8-directional adjacency (including diagonals)
+  const dirs = [
+    [-1, -1], [-1, 0], [-1, 1],
+    [0, -1],           [0, 1],
+    [1, -1],  [1, 0],  [1, 1],
+  ];
+
+  for (const { unit, fromR, fromC } of allUnits) {
+    // If unit is resting (just spawned), stay in place this tick
+    if (unit.restTicks > 0) {
+      unit.restTicks -= 1;
+      cells[fromR][fromC].unit = unit;
+      continue;
+    }
+
+    // Pick random adjacent cell (8-directional, toroidal wrap)
+    const [dr, dc] = dirs[Math.floor(random() * dirs.length)];
+    let nr = (fromR + dr + height) % height;
+    let nc = (fromC + dc + width) % width;
+
+    const targetCell = cells[nr][nc];
+    const targetBiome = targetCell.biome;
+    const isWaterTarget = targetBiome === 'water';
+
+    // Terrain restriction check
+    let canEnter = true;
+    if (unit.movementType === 'land' && isWaterTarget) canEnter = false;
+    if (unit.movementType === 'sea' && !isWaterTarget) canEnter = false;
+    // air crosses anything
+
+    if (canEnter) {
+      unit.row = nr;
+      unit.col = nc;
+      unit.wanderLeft -= 1;
+
+      // Settle only after wandering long enough and target has no civilization
+      if (unit.wanderLeft <= 0 && !targetCell.civilization) {
+        targetCell.civilization = { stage: unit.stage };
+        cells[nr][nc].unit = null; // unit disappears — settled
+      } else {
+        cells[nr][nc].unit = unit;
+      }
+    } else {
+      // Can't move — stay in place (don't decrement wanderLeft on blocked moves)
+      unit.row = fromR;
+      unit.col = fromC;
+      cells[fromR][fromC].unit = unit;
+    }
+  }
+}
+
+// --- T34d: moveUnits moves unit to adjacent cell ---
+(function testMoveUnitsMovesToAdjacentCell() {
+  const width = 5, height = 5;
+  const cells = buildGrid(width, height, 'grassland');
+
+  // Place a civilization with a unit at center [2][2]
+  cells[2][2].civilization = { stage: 1 };
+  cells[2][2].unit = {
+    emoji: '🏇',
+    stage: 1,
+    movementType: 'land',
+    row: 2,
+    col: 2,
+    wanderLeft: UNIT_WANDER_TICKS_TEST,
+    restTicks: 0, // not resting — should move this tick
+  };
+
+  // Verify unit is at [2][2] before movement
+  assert.strictEqual(cells[2][2].unit.row, 2, 'Unit should start at row 2');
+  assert.strictEqual(cells[2][2].unit.col, 2, 'Unit should start at col 2');
+
+  // Use a deterministic RNG that picks direction index 3 → [0, -1] (up)
+  // dirs[3] = [0, -1], so target is [2, 1]
+  const directionIndex = 3; // [0, -1] → moves up one row
+  const deterministicRng = () => directionIndex / 8; // 3/8 = 0.375 → Math.floor(0.375 * 8) = 3
+
+  moveUnitsTest(cells, width, height, deterministicRng);
+
+  // Verify unit moved to [2][1]
+  assert.ok(!cells[2][2].unit, 'Unit should no longer be at origin cell [2][2]');
+  assert.ok(cells[2][1].unit, 'Unit should now be at target cell [2][1]');
+  assert.strictEqual(cells[2][1].unit.row, 2, 'Unit row should be 2 after move');
+  assert.strictEqual(cells[2][1].unit.col, 1, 'Unit col should be 1 after move (moved left)');
+
+  // Verify wanderLeft decremented
+  assert.strictEqual(cells[2][1].unit.wanderLeft, UNIT_WANDER_TICKS_TEST - 1,
+    'wanderLeft should decrement by 1 after successful move');
+
+  // Test 2: verify a different direction — index 7 → [1, 1] (down-right)
+  const cells2 = buildGrid(width, height, 'grassland');
+  cells2[2][2].civilization = { stage: 1 };
+  cells2[2][2].unit = {
+    emoji: '🏇',
+    stage: 1,
+    movementType: 'land',
+    row: 2,
+    col: 2,
+    wanderLeft: UNIT_WANDER_TICKS_TEST,
+    restTicks: 0,
+  };
+
+  const deterministicRng2 = () => 7 / 8; // dirs[7] = [1, 1] → target [3][3]
+  moveUnitsTest(cells2, width, height, deterministicRng2);
+
+  assert.ok(!cells2[2][2].unit, 'Unit should leave origin cell');
+  assert.ok(cells2[3][3].unit, 'Unit should be at [3][3] after down-right move');
+  assert.strictEqual(cells2[3][3].unit.row, 3, 'Unit row should be 3');
+  assert.strictEqual(cells2[3][3].unit.col, 3, 'Unit col should be 3');
+
+  console.log('  T34d moveUnits moves unit to adjacent cell: PASS');
+})();
+
+console.log('\nAll simulation tests passed (including T31-T34).');
