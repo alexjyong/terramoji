@@ -1378,4 +1378,305 @@ function moveUnitsTest(cells, width, height, rng) {
   console.log('  T34d moveUnits moves unit to adjacent cell: PASS');
 })();
 
+// --- T34e: moveUnits prevents land unit from entering water cell ---
+(function testMoveUnitsLandCannotEnterWater() {
+  const width = 5, height = 5;
+  const cells = buildGrid(width, height, 'grassland');
+
+  // Make the target cell [2][1] (left of center) a water tile
+  cells[2][1].biome = 'water';
+
+  // Place a land unit at center [2][2]
+  cells[2][2].civilization = { stage: 1 };
+  cells[2][2].unit = {
+    emoji: '🏇',
+    stage: 1,
+    movementType: 'land',
+    row: 2,
+    col: 2,
+    wanderLeft: UNIT_WANDER_TICKS_TEST,
+    restTicks: 0,
+  };
+
+  // Force direction index 3 → [0, -1] (left) — target is water at [2][1]
+  const deterministicRng = () => 3 / 8;
+
+  moveUnitsTest(cells, width, height, deterministicRng);
+
+  // Land unit should stay at origin — cannot enter water
+  assert.ok(cells[2][2].unit, 'Land unit should remain at origin cell [2][2]');
+  assert.strictEqual(cells[2][2].unit.row, 2, 'Unit row should still be 2');
+  assert.strictEqual(cells[2][2].unit.col, 2, 'Unit col should still be 2');
+  assert.ok(!cells[2][1].unit, 'Water cell [2][1] should have no unit');
+
+  // wanderLeft should NOT decrement on blocked moves
+  assert.strictEqual(cells[2][2].unit.wanderLeft, UNIT_WANDER_TICKS_TEST,
+    'wanderLeft should not decrement when move is blocked by water');
+
+  // Test 2: verify the same land unit stays put even when surrounded by water on multiple sides
+  const cells2 = buildGrid(width, height, 'grassland');
+  // Create a water ring around [2][2]
+  for (let dr = -1; dr <= 1; dr++) {
+    for (let dc = -1; dc <= 1; dc++) {
+      if (dr === 0 && dc === 0) continue;
+      cells2[2 + dr][2 + dc].biome = 'water';
+    }
+  }
+  cells2[2][2].civilization = { stage: 0 };
+  cells2[2][2].unit = {
+    emoji: '🚶',
+    stage: 0,
+    movementType: 'land',
+    row: 2,
+    col: 2,
+    wanderLeft: UNIT_WANDER_TICKS_TEST,
+    restTicks: 0,
+  };
+
+  // Try multiple random directions — all point to water neighbors
+  const waterDirs = [0, 1, 2, 3, 4, 5, 6, 7]; // all 8 directions lead to water
+  let callCount = 0;
+  const cyclingRng = () => {
+    const idx = waterDirs[callCount % waterDirs.length];
+    callCount++;
+    return idx / 8;
+  };
+
+  moveUnitsTest(cells2, width, height, cyclingRng);
+
+  // Unit should still be trapped at [2][2]
+  assert.ok(cells2[2][2].unit, 'Land unit should remain trapped by water ring');
+  assert.strictEqual(cells2[2][2].unit.row, 2, 'Trapped unit row unchanged');
+  assert.strictEqual(cells2[2][2].unit.col, 2, 'Trapped unit col unchanged');
+
+  console.log('  T34e moveUnits prevents land unit from entering water: PASS');
+})();
+
+// --- T34f: moveUnits prevents sea unit from entering land cell ---
+(function testMoveUnitsSeaCannotEnterLand() {
+  const width = 5, height = 5;
+  const cells = buildGrid(width, height, 'water');
+
+  // Make the target cell [2][1] (left of center) a grassland tile
+  cells[2][1].biome = 'grassland';
+
+  // Place a sea unit at center [2][2]
+  cells[2][2].civilization = { stage: 1 };
+  cells[2][2].unit = {
+    emoji: '🛶',
+    stage: 1,
+    movementType: 'sea',
+    row: 2,
+    col: 2,
+    wanderLeft: UNIT_WANDER_TICKS_TEST,
+    restTicks: 0,
+  };
+
+  // Force direction index 3 → [0, -1] (left) — target is land at [2][1]
+  const deterministicRng = () => 3 / 8;
+
+  moveUnitsTest(cells, width, height, deterministicRng);
+
+  // Sea unit should stay at origin — cannot enter land
+  assert.ok(cells[2][2].unit, 'Sea unit should remain at origin cell [2][2]');
+  assert.strictEqual(cells[2][2].unit.row, 2, 'Unit row should still be 2');
+  assert.strictEqual(cells[2][2].unit.col, 2, 'Unit col should still be 2');
+  assert.ok(!cells[2][1].unit, 'Land cell [2][1] should have no unit');
+
+  // wanderLeft should NOT decrement on blocked moves
+  assert.strictEqual(cells[2][2].unit.wanderLeft, UNIT_WANDER_TICKS_TEST,
+    'wanderLeft should not decrement when move is blocked by land');
+
+  // Test 2: verify sea unit stays put when surrounded by land on multiple sides
+  const cells2 = buildGrid(width, height, 'water');
+  // Create a land ring around [2][2]
+  for (let dr = -1; dr <= 1; dr++) {
+    for (let dc = -1; dc <= 1; dc++) {
+      if (dr === 0 && dc === 0) continue;
+      cells2[2 + dr][2 + dc].biome = 'grassland';
+    }
+  }
+  cells2[2][2].civilization = { stage: 2 };
+  cells2[2][2].unit = {
+    emoji: '⛵',
+    stage: 2,
+    movementType: 'sea',
+    row: 2,
+    col: 2,
+    wanderLeft: UNIT_WANDER_TICKS_TEST,
+    restTicks: 0,
+  };
+
+  // Try multiple random directions — all point to land neighbors
+  const landDirs = [0, 1, 2, 3, 4, 5, 6, 7]; // all 8 directions lead to land
+  let callCount = 0;
+  const cyclingRng = () => {
+    const idx = landDirs[callCount % landDirs.length];
+    callCount++;
+    return idx / 8;
+  };
+
+  moveUnitsTest(cells2, width, height, cyclingRng);
+
+  // Unit should still be trapped at [2][2]
+  assert.ok(cells2[2][2].unit, 'Sea unit should remain trapped by land ring');
+  assert.strictEqual(cells2[2][2].unit.row, 2, 'Trapped unit row unchanged');
+  assert.strictEqual(cells2[2][2].unit.col, 2, 'Trapped unit col unchanged');
+
+  // Test 3: sea unit on water can move to adjacent water but not to adjacent land
+  const cells3 = buildGrid(width, height, 'water');
+  // Only [2][1] is land; all other neighbors are water
+  cells3[2][1].biome = 'desert';
+  cells3[2][2].civilization = { stage: 3 };
+  cells3[2][2].unit = {
+    emoji: '🚢',
+    stage: 3,
+    movementType: 'sea',
+    row: 2,
+    col: 2,
+    wanderLeft: UNIT_WANDER_TICKS_TEST,
+    restTicks: 0,
+  };
+
+  // Force direction index 4 → [0, 1] (right) — target is water at [2][3], should succeed
+  const deterministicRng3 = () => 4 / 8;
+  moveUnitsTest(cells3, width, height, deterministicRng3);
+
+  assert.ok(!cells3[2][2].unit, 'Sea unit should leave origin when moving to water');
+  assert.ok(cells3[2][3].unit, 'Sea unit should be at water cell [2][3]');
+  assert.strictEqual(cells3[2][3].unit.row, 2, 'Unit row should be 2');
+  assert.strictEqual(cells3[2][3].unit.col, 3, 'Unit col should be 3');
+
+  console.log('  T34f moveUnits prevents sea unit from entering land: PASS');
+})();
+
+// --- T34g: moveUnits allows air unit to cross any terrain ---
+(function testMoveUnitsAirCrossesAnyTerrain() {
+  const width = 5, height = 5;
+
+  // Test 1: air unit moves from water to land (grassland) — should succeed
+  const cells1 = buildGrid(width, height, 'water');
+  cells1[2][1].biome = 'grassland';
+
+  cells1[2][2].civilization = { stage: 4 }; // Atomic era — air units
+  cells1[2][2].unit = {
+    emoji: '✈️',
+    stage: 4,
+    movementType: 'air',
+    row: 2,
+    col: 2,
+    wanderLeft: UNIT_WANDER_TICKS_TEST,
+    restTicks: 0,
+  };
+
+  // Force direction index 3 → [0, -1] (left) — target is grassland at [2][1]
+  const deterministicRng1 = () => 3 / 8;
+  moveUnitsTest(cells1, width, height, deterministicRng1);
+
+  assert.ok(!cells1[2][2].unit, 'Air unit should leave origin water cell');
+  assert.ok(cells1[2][1].unit, 'Air unit should be at grassland cell [2][1]');
+  assert.strictEqual(cells1[2][1].unit.row, 2, 'Unit row should be 2');
+  assert.strictEqual(cells1[2][1].unit.col, 1, 'Unit col should be 1');
+
+  // Test 2: air unit moves from land to water — should succeed
+  const cells2 = buildGrid(width, height, 'grassland');
+  cells2[2][3].biome = 'water';
+
+  cells2[2][2].civilization = { stage: 5 }; // Information era — air units
+  cells2[2][2].unit = {
+    emoji: '✈️',
+    stage: 5,
+    movementType: 'air',
+    row: 2,
+    col: 2,
+    wanderLeft: UNIT_WANDER_TICKS_TEST,
+    restTicks: 0,
+  };
+
+  // Force direction index 4 → [0, 1] (right) — target is water at [2][3]
+  const deterministicRng2 = () => 4 / 8;
+  moveUnitsTest(cells2, width, height, deterministicRng2);
+
+  assert.ok(!cells2[2][2].unit, 'Air unit should leave origin land cell');
+  assert.ok(cells2[2][3].unit, 'Air unit should be at water cell [2][3]');
+  assert.strictEqual(cells2[2][3].unit.row, 2, 'Unit row should be 2');
+  assert.strictEqual(cells2[2][3].unit.col, 3, 'Unit col should be 3');
+
+  // Test 3: air unit moves across desert — should succeed
+  const cells3 = buildGrid(width, height, 'grassland');
+  cells3[2][1].biome = 'desert';
+
+  cells3[2][2].civilization = { stage: 4 };
+  cells3[2][2].unit = {
+    emoji: '✈️',
+    stage: 4,
+    movementType: 'air',
+    row: 2,
+    col: 2,
+    wanderLeft: UNIT_WANDER_TICKS_TEST,
+    restTicks: 0,
+  };
+
+  const deterministicRng3 = () => 3 / 8; // left → desert at [2][1]
+  moveUnitsTest(cells3, width, height, deterministicRng3);
+
+  assert.ok(!cells3[2][2].unit, 'Air unit should leave origin cell');
+  assert.ok(cells3[2][1].unit, 'Air unit should be at desert cell [2][1]');
+  assert.strictEqual(cells3[2][1].unit.row, 2, 'Unit row should be 2');
+  assert.strictEqual(cells3[2][1].unit.col, 1, 'Unit col should be 1');
+
+  // Test 4: air unit moves across ice — should succeed
+  const cells4 = buildGrid(width, height, 'grassland');
+  cells4[2][3].biome = 'ice';
+
+  cells4[2][2].civilization = { stage: 5 };
+  cells4[2][2].unit = {
+    emoji: '✈️',
+    stage: 5,
+    movementType: 'air',
+    row: 2,
+    col: 2,
+    wanderLeft: UNIT_WANDER_TICKS_TEST,
+    restTicks: 0,
+  };
+
+  const deterministicRng4 = () => 4 / 8; // right → ice at [2][3]
+  moveUnitsTest(cells4, width, height, deterministicRng4);
+
+  assert.ok(!cells4[2][2].unit, 'Air unit should leave origin cell');
+  assert.ok(cells4[2][3].unit, 'Air unit should be at ice cell [2][3]');
+  assert.strictEqual(cells4[2][3].unit.row, 2, 'Unit row should be 2');
+  assert.strictEqual(cells4[2][3].unit.col, 3, 'Unit col should be 3');
+
+  // Test 5: air unit is not trapped by a ring of mixed terrain (water + land)
+  const cells5 = buildGrid(width, height, 'grassland');
+  // Create a mixed ring around [2][2]: water on top/bottom, land on sides
+  cells5[1][2].biome = 'water';  // up
+  cells5[3][2].biome = 'water';  // down
+  // diagonals remain grassland
+
+  cells5[2][2].civilization = { stage: 4 };
+  cells5[2][2].unit = {
+    emoji: '✈️',
+    stage: 4,
+    movementType: 'air',
+    row: 2,
+    col: 2,
+    wanderLeft: UNIT_WANDER_TICKS_TEST,
+    restTicks: 0,
+  };
+
+  // Force direction index 0 → [-1, -1] (up-left) — water at [1][1] would block land/sea but not air
+  // Actually [1][1] is grassland, let's force index 1 → [-1, 0] which is water at [1][2]
+  const deterministicRng5 = () => 1 / 8;
+  moveUnitsTest(cells5, width, height, deterministicRng5);
+
+  assert.ok(!cells5[2][2].unit, 'Air unit should leave origin — not trapped by water');
+  assert.ok(cells5[1][2].unit, 'Air unit should be at water cell [1][2]');
+  assert.strictEqual(cells5[1][2].unit.row, 1, 'Unit row should be 1');
+  assert.strictEqual(cells5[1][2].unit.col, 2, 'Unit col should be 2');
+
+  console.log('  T34g moveUnits allows air unit to cross any terrain: PASS');
+})();
+
 console.log('\nAll simulation tests passed (including T31-T34).');
