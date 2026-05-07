@@ -237,9 +237,26 @@
   - _File: `tests/test_simulation.js`_
   - _Depends on: T20, T21, T22_
 
+  - [ ] **T34a** Test `spawnUnit()` — verify unit created with correct emoji/stage/movementType on civ cell
+  - [ ] **T34b** Test `spawnUnit()` — verify no spawn when unit cap (MAX_UNITS) reached
+  - [ ] **T34c** Test `spawnUnit()` — verify sea unit spawned on water biome, land unit on land biome
+  - [ ] **T34d** Test `moveUnits()` — verify unit moves to adjacent cell
+  - [ ] **T34e** Test `moveUnits()` — verify land unit cannot enter water cell
+  - [ ] **T34f** Test `moveUnits()` — verify sea unit cannot enter land cell
+  - [ ] **T34g** Test `moveUnits()` — verify air unit can cross any terrain
+  - [ ] **T34h** Test `moveUnits()` — verify toroidal wrap-around at map edges
+  - [ ] **T34i** Test `settleUnit()` — verify unit settles on empty cell, creates civ at unit's stage
+  - [ ] **T34j** Test `settleUnit()` — verify unit disappears when settling on existing civ cell
+  - [ ] **T34k** Test unit restTicks — unit rests 1 tick on spawn before moving
+
 - [ ] **T35** Add tests for unit cap enforcement and planet reset clearing units
   - _File: `tests/test_simulation.js`_
   - _Depends on: T23, T24_
+
+  - [ ] **T35a** Test MAX_UNITS cap — verify no new units spawn when cap is reached (fill grid to cap, tick, count stays same)
+  - [ ] **T35b** Test `countActiveUnits()` — returns correct count across multiple cells with/without units
+  - [ ] **T35c** Test `generatePlanet()` clears all units — verify zero units after regeneration
+  - [ ] **T35d** Test units cleared but civilizations preserved on planet reset (civ data stays, units go)
 
 - [ ] **T36** Add renderer integration tests for civ display and unit overlay
   - _File: `tests/test_renderer.js`_
