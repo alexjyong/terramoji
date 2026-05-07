@@ -22,6 +22,8 @@ const state = {
   tick: 0,
   selectedBiome: null,
   inspectMode: false,
+  monolithMode: false,
+  civMode: false,
   isRunning: false,
   isPaused: false,
 };
@@ -54,11 +56,11 @@ function generatePlanet() {
     for (let c = 0; c < width; c++) {
       // Force ice at poles
       if (r < POLE_ROWS.top || r >= height - POLE_ROWS.bottom) {
-        state.grid.cells[r][c] = { biome: 'ice', creatures: [], civilization: null };
+        state.grid.cells[r][c] = { biome: 'ice', creatures: [], civilization: null, unit: null };
       } else {
         const nonPoleBiomes = BIOME_KEYS.filter(b => b !== 'ice');
         const biome = nonPoleBiomes[Math.floor(rng() * nonPoleBiomes.length)];
-        state.grid.cells[r][c] = { biome, creatures: [], civilization: null };
+        state.grid.cells[r][c] = { biome, creatures: [], civilization: null, unit: null };
       }
     }
   }
@@ -129,7 +131,13 @@ function smoothGrid() {
           dominant = b;
         }
       }
-      next[r][c] = { biome: dominant, creatures: [], civilization: null };
+      next[r][c] = {
+        biome: dominant,
+        creatures: [],
+        civilization: cells[r][c].civilization, // preserve civ through smoothing
+        unit: cells[r][c].unit,                 // preserve unit through smoothing
+        cactus: cells[r][c].cactus,             // preserve cactus flag
+      };
     }
   }
 
@@ -137,15 +145,58 @@ function smoothGrid() {
 }
 
 // --- Creature Configuration (many-to-many biome compatibility) ---
+// Expanded roster: ~25 creatures across all biomes.
+// Multi-biome creatures (eagle, bear, snake, etc.) naturally migrate between habitats.
 const CREATURE_TYPES = {
-  fish:    { emoji: '🐟', compatibleBiomes: ['water'] },
-  cow:     { emoji: '🐄', compatibleBiomes: ['grassland', 'forest'] },
-  camel:   { emoji: '🐪', compatibleBiomes: ['desert'] },
-  goat:    { emoji: '🐐', compatibleBiomes: ['mountain', 'grassland'] },
-  deer:    { emoji: '🦌', compatibleBiomes: ['forest', 'grassland'] },
-  parrot:  { emoji: '🦜', compatibleBiomes: ['jungle', 'forest'] },
-  penguin: { emoji: '🐧', compatibleBiomes: ['ice'] },
+  // Water
+  fish:     { emoji: '🐟', compatibleBiomes: ['water'] },
+  octopus:  { emoji: '🐙', compatibleBiomes: ['water'] },
+  shark:    { emoji: '🦈', compatibleBiomes: ['water'] },
+  turtle:   { emoji: '🐢', compatibleBiomes: ['water', 'desert'] },
+  dolphin:  { emoji: '🐬', compatibleBiomes: ['water'] },
+
+  // Grassland
+  cow:      { emoji: '🐄', compatibleBiomes: ['grassland', 'forest'] },
+  horse:    { emoji: '🐴', compatibleBiomes: ['grassland'] },
+  sheep:    { emoji: '🐑', compatibleBiomes: ['grassland'] },
+  lion:     { emoji: '🦁', compatibleBiomes: ['grassland'] },
+  elephant: { emoji: '🐘', compatibleBiomes: ['grassland', 'forest'] },
+
+  // Desert
+  camel:    { emoji: '🐪', compatibleBiomes: ['desert'] },
+  scorpion: { emoji: '🦂', compatibleBiomes: ['desert'] },
+  lizard:   { emoji: '🦎', compatibleBiomes: ['desert'] },
+
+  // Mountain (+ shared with grassland/forest)
+  goat:     { emoji: '🐐', compatibleBiomes: ['mountain', 'grassland'] },
+  eagle:    { emoji: '🦅', compatibleBiomes: ['mountain', 'grassland'] },
+
+  // Forest (+ shared with grassland/jungle)
+  deer:     { emoji: '🦌', compatibleBiomes: ['forest', 'grassland'] },
+  fox:      { emoji: '🦊', compatibleBiomes: ['forest'] },
+  squirrel: { emoji: '🐿️', compatibleBiomes: ['forest'] },
+  boar:     { emoji: '🐗', compatibleBiomes: ['forest'] },
+  bear:     { emoji: '🐻', compatibleBiomes: ['forest', 'mountain'] },
+
+  // Jungle (+ shared with forest/desert)
+  parrot:   { emoji: '🦜', compatibleBiomes: ['jungle', 'forest'] },
+  monkey:   { emoji: '🐒', compatibleBiomes: ['jungle'] },
+  butterfly:{ emoji: '🦋', compatibleBiomes: ['jungle', 'forest', 'grassland'] },
+  snake:    { emoji: '🐍', compatibleBiomes: ['jungle', 'desert'] },
+
+  // Ice
+  penguin:  { emoji: '🐧', compatibleBiomes: ['ice'] },
+  polarbear:{ emoji: '🐻‍❄️', compatibleBiomes: ['ice'] },
+  seal:     { emoji: '🦭', compatibleBiomes: ['ice', 'water'] },
 };
+
+// Build a reverse index: biome → list of creature names that can live there
+// (used by spawning to pick a random creature for a given biome)
+function getCreaturesForBiome(biome) {
+  return Object.keys(CREATURE_TYPES).filter(
+    name => CREATURE_TYPES[name].compatibleBiomes.includes(biome)
+  );
+}
 
 let creatureIdCounter = 0;
 
@@ -153,7 +204,7 @@ function createCreature(name, row, col) {
   const ct = CREATURE_TYPES[name];
   if (!ct) throw new Error(`Unknown creature type: ${name}`);
   creatureIdCounter++;
-  return { id: `c_${creatureIdCounter}`, emoji: ct.emoji, compatibleBiomes: [...ct.compatibleBiomes], row, col };
+  return { id: `c_${creatureIdCounter}`, name, emoji: ct.emoji, compatibleBiomes: [...ct.compatibleBiomes], row, col };
 }
 
 function totalCreatures(cells, width, height) {
@@ -225,14 +276,13 @@ function spawnCreatures() {
     if ((biomeCounts[biome] || 0) >= MAX_PER_BIOME) continue;
 
     const cell = cells[r][c];
-    for (const [name, ct] of Object.entries(CREATURE_TYPES)) {
-      if (ct.compatibleBiomes.includes(cell.biome)) {
-        cell.creatures.push(createCreature(name, r, c));
-        total++;
-        biomeCounts[biome] = (biomeCounts[biome] || 0) + 1;
-        break;
-      }
-    }
+    // Pick a random creature type that is compatible with this cell's biome
+    const candidates = getCreaturesForBiome(cell.biome);
+    if (candidates.length === 0) continue;
+    const chosen = candidates[Math.floor(Math.random() * candidates.length)];
+    cell.creatures.push(createCreature(chosen, r, c));
+    total++;
+    biomeCounts[biome] = (biomeCounts[biome] || 0) + 1;
   }
 }
 
@@ -292,13 +342,30 @@ let tickInterval = null;
 
 function tick() {
   // The simulation tick runs every 1000ms via setInterval.
-  // Order matters: move first, then spawn new creatures, then remove any
-  // creatures now on incompatible biomes. Finally re-render the grid.
+  // Order matters: move creatures → spawn creatures → remove incompatible → advance civs → spawn/move units → re-render.
   if (state.isPaused) return;
 
   moveCreatures();
   spawnCreatures();
   removeIncompatibleCreatures();
+
+  // Civilization advancement + unit lifecycle
+  const { cells, width, height } = state.grid;
+  for (let r = 0; r < height; r++) {
+    for (let c = 0; c < width; c++) {
+      const cell = cells[r][c];
+      advanceCivilization(cell);
+
+      // Spawn units from civilizations (stages 0-5)
+      if (cell.civilization && cell.civilization.stage <= 5 && Math.random() < UNIT_SPAWN_CHANCE) {
+        spawnUnit(r, c);
+      }
+    }
+  }
+
+  // Move all active units (settle happens inside moveUnits)
+  moveUnits();
+
   state.tick++;
 
   renderGrid();
@@ -327,6 +394,232 @@ function removeIncompatibleCreatures() {
 }
 
 // --- Tick Loop (T026/T027) ---
+
+// --- Tech Stages (7 stages: Stone → Nanotech) ---
+const TECH_STAGES = [
+  { name: 'Stone',       emoji: '🛖' },   // 0
+  { name: 'Bronze',      emoji: '🛕' },   // 1
+  { name: 'Iron',        emoji: '🏰' },   // 2
+  { name: 'Industrial',  emoji: '🏭' },   // 3
+  { name: 'Atomic',      emoji: '☢️' },   // 4
+  { name: 'Information', emoji: '💻' },   // 5
+  { name: 'Nanotech',    emoji: '🔮' },   // 6 (terminal)
+];
+
+const TECH_ADVANCE_CHANCE = 0.02;  // ~2% per tick, ~50 ticks per stage
+
+// --- Unit Types (spawned from civilizations, stages 0–5 only) ---
+const UNIT_TYPES = {
+  // stage → { land: { emoji, movementType }, sea: { emoji, movementType } | null }
+  0: { land: { emoji: '🚶', movementType: 'land' } },                          // Stone
+  1: { land: { emoji: '🏇', movementType: 'land' }, sea: { emoji: '🛶', movementType: 'sea' } },  // Bronze
+  2: { land: { emoji: '🐪', movementType: 'land' }, sea: { emoji: '⛵', movementType: 'sea' } },  // Iron
+  3: { land: { emoji: '🚂', movementType: 'land' }, sea: { emoji: '🚢', movementType: 'sea' } },  // Industrial
+  4: { land: { emoji: '✈️', movementType: 'air' }, sea: { emoji: '✈️', movementType: 'air' } },   // Atomic
+  5: { land: { emoji: '✈️', movementType: 'air' }, sea: { emoji: '✈️', movementType: 'air' } },   // Information
+};
+
+const UNIT_SPAWN_CHANCE = 0.05;  // ~5% per tick per civilization
+const MAX_UNITS = 20;            // global cap on active mobile units
+const UNIT_WANDER_TICKS = 8;     // ticks a unit wanders before it can settle
+
+// --- Civilization Logic ---
+
+let statusTimeout = null;
+
+function showStatus(message, type) {
+  const bar = document.getElementById('status-bar');
+  if (!bar) return;
+  bar.innerHTML = `<div class="status-bar-inner">${message}</div>`;
+  bar.className = 'status-bar' + (type ? ` ${type}` : '');
+  clearTimeout(statusTimeout);
+  statusTimeout = setTimeout(() => {
+    bar.className = 'status-bar hidden';
+  }, 2500);
+}
+
+function hasAnyCivilization() {
+  const { cells, width, height } = state.grid;
+  for (let r = 0; r < height; r++) {
+    for (let c = 0; c < width; c++) {
+      if (cells[r][c].civilization) return true;
+    }
+  }
+  return false;
+}
+
+function hasAnyCreatures() {
+  const { cells, width, height } = state.grid;
+  for (let r = 0; r < height; r++) {
+    for (let c = 0; c < width; c++) {
+      if (cells[r][c].creatures && cells[r][c].creatures.length > 0) return true;
+    }
+  }
+  return false;
+}
+
+// --- T023: createCivilization ---
+function createCivilization(row, col) {
+  const cell = state.grid.cells[row][col];
+  if (!cell) return false;
+
+  // Monolith mode: found the very first civilization (requires creatures, one-per-planet)
+  if (state.monolithMode) {
+    if (hasAnyCivilization()) {
+      showStatus('⚠️ A civilization already exists on this planet!', 'error');
+      return false;
+    }
+    if (!cell.creatures || cell.creatures.length === 0) {
+      showStatus('⚠️ No sentient beings here to civilize!', 'error');
+      return false;
+    }
+    const species = cell.creatures[0].name;
+    cell.civilization = { stage: 0, species };
+    showStatus(`🗿 ${species} civilization founded!`, 'success');
+    return true;
+  }
+
+  // Civ placement mode: place a new city at the highest existing tech stage
+  if (!hasAnyCivilization()) {
+    showStatus('⚠️ No civilization exists yet — use a Monolith first!', 'error');
+    return false;
+  }
+  if (cell.civilization) {
+    showStatus('⚠️ Cell already has a civilization!', 'error');
+    return false;
+  }
+
+  // Find max stage across the planet
+  let maxStage = 0;
+  const { cells, width, height } = state.grid;
+  for (let r = 0; r < height; r++) {
+    for (let c = 0; c < width; c++) {
+      if (cells[r][c].civilization && cells[r][c].civilization.stage > maxStage) {
+        maxStage = cells[r][c].civilization.stage;
+      }
+    }
+  }
+  cell.civilization = { stage: maxStage };
+  const tech = TECH_STAGES[maxStage];
+  showStatus(`${tech.emoji} New ${tech.name} city founded!`, 'success');
+  return true;
+}
+
+function advanceCivilization(cell) {
+  if (!cell.civilization) return;
+  if (cell.civilization.stage >= TECH_STAGES.length - 1) return; // terminal
+  if (Math.random() < TECH_ADVANCE_CHANCE) {
+    cell.civilization.stage += 1;
+  }
+}
+
+// --- Mobile Unit Logic ---
+
+function countActiveUnits() {
+  const { cells, width, height } = state.grid;
+  let count = 0;
+  for (let r = 0; r < height; r++) {
+    for (let c = 0; c < width; c++) {
+      if (cells[r][c].unit) count++;
+    }
+  }
+  return count;
+}
+
+function spawnUnit(row, col) {
+  const cell = state.grid.cells[row][col];
+  if (!cell.civilization || cell.civilization.stage > 5) return false; // nanotech doesn't spawn
+  if (countActiveUnits() >= MAX_UNITS) return false;
+
+  const stage = cell.civilization.stage;
+  const unitDef = UNIT_TYPES[stage];
+  if (!unitDef) return false;
+
+  // Pick land or sea unit based on current cell biome
+  const isWater = cell.biome === 'water';
+  let chosen;
+  if (isWater && unitDef.sea) {
+    chosen = unitDef.sea;
+  } else {
+    chosen = unitDef.land;
+  }
+
+  cell.unit = {
+    emoji: chosen.emoji,
+    stage: stage,
+    movementType: chosen.movementType,
+    row: row,
+    col: col,
+    wanderLeft: UNIT_WANDER_TICKS,
+    restTicks: 1, // stay on spawn cell for one tick so user can see it
+  };
+  return true;
+}
+
+function moveUnits() {
+  const { cells, width, height } = state.grid;
+
+  // Collect all units
+  const allUnits = [];
+  for (let r = 0; r < height; r++) {
+    for (let c = 0; c < width; c++) {
+      if (cells[r][c].unit) {
+        allUnits.push({ unit: cells[r][c].unit, fromR: r, fromC: c });
+        cells[r][c].unit = null; // clear — reassign below
+      }
+    }
+  }
+
+  // 8-directional adjacency (including diagonals)
+  const dirs = [
+    [-1, -1], [-1, 0], [-1, 1],
+    [0, -1],           [0, 1],
+    [1, -1],  [1, 0],  [1, 1],
+  ];
+
+  for (const { unit, fromR, fromC } of allUnits) {
+    // If unit is resting (just spawned), stay in place this tick
+    if (unit.restTicks > 0) {
+      unit.restTicks -= 1;
+      cells[fromR][fromC].unit = unit;
+      continue;
+    }
+
+    // Pick random adjacent cell (8-directional, toroidal wrap)
+    const [dr, dc] = dirs[Math.floor(Math.random() * dirs.length)];
+    let nr = (fromR + dr + height) % height;
+    let nc = (fromC + dc + width) % width;
+
+    const targetCell = cells[nr][nc];
+    const targetBiome = targetCell.biome;
+    const isWaterTarget = targetBiome === 'water';
+
+    // Terrain restriction check
+    let canEnter = true;
+    if (unit.movementType === 'land' && isWaterTarget) canEnter = false;
+    if (unit.movementType === 'sea' && !isWaterTarget) canEnter = false;
+    // air crosses anything
+
+    if (canEnter) {
+      unit.row = nr;
+      unit.col = nc;
+      unit.wanderLeft -= 1;
+
+      // Settle only after wandering long enough and target has no civilization
+      if (unit.wanderLeft <= 0 && !targetCell.civilization) {
+        targetCell.civilization = { stage: unit.stage };
+        cells[nr][nc].unit = null; // unit disappears — settled
+      } else {
+        cells[nr][nc].unit = unit;
+      }
+    } else {
+      // Can't move — stay in place (don't decrement wanderLeft on blocked moves)
+      unit.row = fromR;
+      unit.col = fromC;
+      cells[fromR][fromC].unit = unit;
+    }
+  }
+}
 
 // --- Manual Biome Editing (T019a) ---
 

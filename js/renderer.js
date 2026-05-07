@@ -24,17 +24,49 @@ function renderGrid() {
       div.dataset.col = c;
       div.dataset.biome = cell.biome; // CSS selector hook for biome styles
 
-      // Render priority: landmark > cactus > creature > nothing (base terrain)
-      const landmark = BIOMES[cell.biome].landmark;
+      // Render priority: civilization > landmark > cactus > creature > nothing
+      // When a civilization exists, its emoji is the main cell content;
+      // landmarks/cacti/creatures appear as small overlays instead.
+      const biomeDef = BIOMES[cell.biome];
+      const landmark = biomeDef ? biomeDef.landmark : null;
       const hasCreatures = cell.creatures && cell.creatures.length > 0;
+      const creatureEmoji = hasCreatures ? cell.creatures[0].emoji : null;
+      const civDef = cell.civilization ? TECH_STAGES[cell.civilization.stage] : null;
+      const civEmoji = civDef ? civDef.emoji : null;
+      const unitEmoji = cell.unit ? cell.unit.emoji : null;
 
-      if (landmark) {
-        div.textContent = landmark;
-        // Overlay creature emoji centered on top of landmark
+      if (civEmoji) {
+        // Civilization is the main content
+        div.textContent = civEmoji;
+        // Overlay landmark emoji when civ sits on a landmark tile
+        if (landmark) {
+          const lmSpan = document.createElement('span');
+          lmSpan.className = 'creature-overlay';
+          lmSpan.textContent = landmark;
+          div.appendChild(lmSpan);
+        }
+        // Overlay cactus emoji when civ sits on a cactus tile
+        if (cell.cactus) {
+          const ctSpan = document.createElement('span');
+          ctSpan.className = 'creature-overlay';
+          ctSpan.textContent = '🌵';
+          div.appendChild(ctSpan);
+        }
+        // Overlay creature emoji when civ and creatures coexist
         if (hasCreatures) {
           const crSpan = document.createElement('span');
           crSpan.className = 'creature-overlay';
-          crSpan.textContent = BIOMES[cell.biome].creature;
+          crSpan.textContent = creatureEmoji;
+          div.appendChild(crSpan);
+        }
+      }
+      else if (landmark) {
+        div.textContent = landmark;
+        // Overlay creature emoji on landmark tiles
+        if (hasCreatures) {
+          const crSpan = document.createElement('span');
+          crSpan.className = 'creature-overlay';
+          crSpan.textContent = creatureEmoji;
           div.appendChild(crSpan);
         }
       }
@@ -42,11 +74,19 @@ function renderGrid() {
       else if (cell.cactus) {
         div.textContent = '🌵';
       }
-      // Render creatures as emoji (entities remain emoji per constitution)
+      // Render creatures as emoji (from expanded CREATURE_TYPES roster)
       else if (hasCreatures) {
-        div.textContent = BIOMES[cell.biome].creature;
+        div.textContent = creatureEmoji;
       }
       // No emoji on base terrain — CSS gradients/textures handle visuals
+
+      // Mobile unit overlay (top-left, small)
+      if (unitEmoji) {
+        const unitSpan = document.createElement('span');
+        unitSpan.className = 'unit-overlay';
+        unitSpan.textContent = unitEmoji;
+        div.appendChild(unitSpan);
+      }
 
       gridEl.appendChild(div);
     }
@@ -71,12 +111,12 @@ function showInspectTooltip(row, col, cellDiv) {
     const groups = {};
     for (const cr of cell.creatures) {
       const key = cr.emoji;
-      if (!groups[key]) groups[key] = { emoji: cr.emoji, count: 0 };
+      if (!groups[key]) groups[key] = { emoji: cr.emoji, name: cr.name || cr.emoji, count: 0 };
       groups[key].count++;
     }
     let creatureRows = '';
     for (const g of Object.values(groups)) {
-      creatureRows += `<div class="tooltip-creature">${g.emoji} × ${g.count}</div>`;
+      creatureRows += `<div class="tooltip-creature">${g.emoji} ${g.name} × ${g.count}</div>`;
     }
     html += `<div class="tooltip-section"><div class="tooltip-label">Creature</div>${creatureRows}</div>`;
   } else {
@@ -85,22 +125,39 @@ function showInspectTooltip(row, col, cellDiv) {
 
   // Civilization panel
   if (cell.civilization) {
-    html += `<div class="tooltip-section"><div class="tooltip-label">Civilization</div><div class="tooltip-civilization">🏛️ ${cell.civilization}</div></div>`;
+    const tech = TECH_STAGES[cell.civilization.stage];
+    const species = cell.civilization.species || 'Unknown';
+    html += `<div class="tooltip-section"><div class="tooltip-label">Civilization</div><div class="tooltip-civilization">${tech.emoji} ${species} — ${tech.name} (Stage ${cell.civilization.stage})</div></div>`;
   } else {
     html += `<div class="tooltip-section"><div class="tooltip-label">Civilization</div><div class="tooltip-civilization">none</div></div>`;
+  }
+
+  // Mobile unit panel
+  if (cell.unit) {
+    const unitTech = TECH_STAGES[cell.unit.stage];
+    html += `<div class="tooltip-section"><div class="tooltip-label">Mobile Unit</div><div class="tooltip-unit">${cell.unit.emoji} ${unitTech.name} unit</div></div>`;
   }
 
   html += '</div>';
   tooltipEl.innerHTML = html;
   tooltipEl.classList.remove('hidden');
 
-  // Position tooltip near the clicked cell
+  // Pause the game while inspecting
+  state.isPaused = true;
+
+  // Position tooltip centered on the clicked cell
   const rect = cellDiv.getBoundingClientRect();
   let top = rect.bottom + 8;
-  let left = rect.left;
+  let left = rect.left + rect.width / 2;
 
-  // Keep tooltip within viewport
+  // Measure tooltip, then center it horizontally
   const tooltipRect = tooltipEl.getBoundingClientRect();
+  if (tooltipRect.width > 0) {
+    left = left - tooltipRect.width / 2;
+  }
+
+  // Clamp within viewport
+  if (left < 8) left = 8;
   if (left + tooltipRect.width > window.innerWidth - 8) {
     left = window.innerWidth - tooltipRect.width - 8;
   }
@@ -114,4 +171,6 @@ function showInspectTooltip(row, col, cellDiv) {
 
 function hideTooltip() {
   tooltipEl.classList.add('hidden');
+  // Resume the game when tooltip is dismissed
+  state.isPaused = false;
 }

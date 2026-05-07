@@ -19,6 +19,50 @@ header {
   padding: 1rem;
 }
 
+/* --- Status Bar (toast messages) --- */
+
+.status-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 200;
+  display: flex;
+  justify-content: center;
+  padding: 0.5rem;
+  pointer-events: none;
+  transition: opacity 0.3s;
+}
+
+.status-bar.hidden {
+  opacity: 0;
+}
+
+.status-bar:not(.hidden) {
+  opacity: 1;
+}
+
+.status-bar-inner {
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.9rem;
+  font-weight: bold;
+  color: #eee;
+  background: rgba(22, 33, 62, 0.95);
+  border: 2px solid #7CB342;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+.status-bar.error .status-bar-inner {
+  border-color: #e74c3c;
+  background: rgba(80, 10, 10, 0.95);
+}
+
+.status-bar.success .status-bar-inner {
+  border-color: #7CB342;
+  background: rgba(20, 60, 10, 0.95);
+}
+
 h1 {
   font-size: 1.5rem;
   margin-bottom: 0.5rem;
@@ -92,6 +136,18 @@ h1 {
   line-height: 1;
   pointer-events: none;
   z-index: 2;
+}
+
+/* --- Mobile unit overlay (top-left) --- */
+
+.unit-overlay {
+  position: absolute;
+  top: 1px;
+  left: 1px;
+  font-size: 10px;
+  line-height: 1;
+  pointer-events: none;
+  z-index: 3;
 }
 
 /* --- Biome Terrain Styles (CSS gradients + textures) --- */
@@ -210,6 +266,27 @@ h1 {
   pointer-events: none;
 }
 
+/* --- Civilization Tool Buttons --- */
+
+.civ-buttons {
+  display: flex;
+  gap: 0.25rem;
+  padding-left: 0.75rem;
+  border-left: 2px solid #333;
+  margin-left: 0.25rem;
+}
+
+.civ-buttons button {
+  font-size: 1.1rem;
+  padding: 0.45rem 0.75rem;
+}
+
+.civ-buttons button.active {
+  border-color: #E8B84D;
+  background: #3a2e0a;
+  box-shadow: 0 0 6px rgba(232, 184, 77, 0.5);
+}
+
 /* --- Biome Selection Buttons --- */
 
 .biome-buttons {
@@ -247,8 +324,9 @@ h1 {
   font-size: 0.85rem;
   line-height: 1.4;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
-  pointer-events: none;
+  pointer-events: auto;
   max-width: 320px;
+  cursor: pointer;
 }
 
 .inspect-tooltip.hidden {

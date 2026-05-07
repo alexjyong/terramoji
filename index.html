@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
   <title>TerraMoji</title>
   <link rel="stylesheet" href="css/game.css">
 </head>
@@ -14,6 +16,10 @@
       <button id="btn-new-planet">🌍 New Planet</button>
       <button id="btn-pause">⏸️ Pause</button>
       <button id="btn-inspect" title="Inspect tile">🔍 Inspect</button>
+      <div class="civ-buttons">
+        <button id="btn-monolith" title="Create civilization (requires creatures)">🗿 Monolith</button>
+        <button id="btn-civ" title="Place civilization anywhere">🏠 Civ</button>
+      </div>
       <div class="biome-buttons">
         <button data-biome="water" title="Water">🌊</button>
         <button data-biome="grassland" title="Grassland">🌿</button>
@@ -25,6 +31,7 @@
       </div>
     </nav>
   </header>
+  <div id="status-bar" class="status-bar hidden"></div>
   <main>
     <div id="grid"></div>
     <div id="inspect-tooltip" class="inspect-tooltip hidden"></div>
@@ -32,5 +39,12 @@
   <script src="js/simulation.js"></script>
   <script src="js/renderer.js"></script>
   <script src="js/input.js"></script>
+  <script>
+    // No-cache: clear any cached resources and service workers
+    (function() {
+      if ('serviceWorker' in navigator) navigator.serviceWorker.getRegistrations().then(function(r) { r.forEach(function(sw) { sw.unregister(); }); });
+      if ('caches' in window) caches.keys().then(function(keys) { keys.forEach(function(k) { caches.delete(k); }); });
+    })();
+  </script>
 </body>
 </html>
