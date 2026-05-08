@@ -1679,6 +1679,167 @@ function moveUnitsTest(cells, width, height, rng) {
   console.log('  T34g moveUnits allows air unit to cross any terrain: PASS');
 })();
 
+// --- T34h: moveUnits — verify toroidal wrap-around at map edges ---
+(function testMoveUnitsToroidalWrap() {
+  const width = 5, height = 5;
+
+  // Test 1: land unit at top edge (row 0) moves up → wraps to bottom row (row 4)
+  const cells1 = buildGrid(width, height, 'grassland');
+  cells1[0][2].civilization = { stage: 1 };
+  cells1[0][2].unit = {
+    emoji: '🏇',
+    stage: 1,
+    movementType: 'land',
+    row: 0,
+    col: 2,
+    wanderLeft: UNIT_WANDER_TICKS_TEST,
+    restTicks: 0,
+  };
+
+  // Force direction index 1 → [-1, 0] (up) — wraps from row 0 to row 4
+  const deterministicRng1 = () => 1 / 8;
+  moveUnitsTest(cells1, width, height, deterministicRng1);
+
+  assert.ok(!cells1[0][2].unit, 'Unit should leave top edge cell [0][2]');
+  assert.ok(cells1[4][2].unit, 'Unit should wrap to bottom row [4][2]');
+  assert.strictEqual(cells1[4][2].unit.row, 4, 'Wrapped unit row should be 4 (bottom)');
+  assert.strictEqual(cells1[4][2].unit.col, 2, 'Wrapped unit col should still be 2');
+
+  // Test 2: land unit at bottom edge (row 4) moves down → wraps to top row (row 0)
+  const cells2 = buildGrid(width, height, 'grassland');
+  cells2[4][2].civilization = { stage: 1 };
+  cells2[4][2].unit = {
+    emoji: '🏇',
+    stage: 1,
+    movementType: 'land',
+    row: 4,
+    col: 2,
+    wanderLeft: UNIT_WANDER_TICKS_TEST,
+    restTicks: 0,
+  };
+
+  // Force direction index 6 → [1, 0] (down) — wraps from row 4 to row 0
+  const deterministicRng2 = () => 6 / 8;
+  moveUnitsTest(cells2, width, height, deterministicRng2);
+
+  assert.ok(!cells2[4][2].unit, 'Unit should leave bottom edge cell [4][2]');
+  assert.ok(cells2[0][2].unit, 'Unit should wrap to top row [0][2]');
+  assert.strictEqual(cells2[0][2].unit.row, 0, 'Wrapped unit row should be 0 (top)');
+  assert.strictEqual(cells2[0][2].unit.col, 2, 'Wrapped unit col should still be 2');
+
+  // Test 3: land unit at left edge (col 0) moves left → wraps to rightmost col (col 4)
+  const cells3 = buildGrid(width, height, 'grassland');
+  cells3[2][0].civilization = { stage: 1 };
+  cells3[2][0].unit = {
+    emoji: '🏇',
+    stage: 1,
+    movementType: 'land',
+    row: 2,
+    col: 0,
+    wanderLeft: UNIT_WANDER_TICKS_TEST,
+    restTicks: 0,
+  };
+
+  // Force direction index 3 → [0, -1] (left) — wraps from col 0 to col 4
+  const deterministicRng3 = () => 3 / 8;
+  moveUnitsTest(cells3, width, height, deterministicRng3);
+
+  assert.ok(!cells3[2][0].unit, 'Unit should leave left edge cell [2][0]');
+  assert.ok(cells3[2][4].unit, 'Unit should wrap to rightmost col [2][4]');
+  assert.strictEqual(cells3[2][4].unit.row, 2, 'Wrapped unit row should still be 2');
+  assert.strictEqual(cells3[2][4].unit.col, 4, 'Wrapped unit col should be 4 (right)');
+
+  // Test 4: land unit at right edge (col 4) moves right → wraps to leftmost col (col 0)
+  const cells4 = buildGrid(width, height, 'grassland');
+  cells4[2][4].civilization = { stage: 1 };
+  cells4[2][4].unit = {
+    emoji: '🏇',
+    stage: 1,
+    movementType: 'land',
+    row: 2,
+    col: 4,
+    wanderLeft: UNIT_WANDER_TICKS_TEST,
+    restTicks: 0,
+  };
+
+  // Force direction index 4 → [0, 1] (right) — wraps from col 4 to col 0
+  const deterministicRng4 = () => 4 / 8;
+  moveUnitsTest(cells4, width, height, deterministicRng4);
+
+  assert.ok(!cells4[2][4].unit, 'Unit should leave right edge cell [2][4]');
+  assert.ok(cells4[2][0].unit, 'Unit should wrap to leftmost col [2][0]');
+  assert.strictEqual(cells4[2][0].unit.row, 2, 'Wrapped unit row should still be 2');
+  assert.strictEqual(cells4[2][0].unit.col, 0, 'Wrapped unit col should be 0 (left)');
+
+  // Test 5: diagonal wrap — unit at corner [0][0] moves up-left → wraps to [4][4]
+  const cells5 = buildGrid(width, height, 'grassland');
+  cells5[0][0].civilization = { stage: 1 };
+  cells5[0][0].unit = {
+    emoji: '🏇',
+    stage: 1,
+    movementType: 'land',
+    row: 0,
+    col: 0,
+    wanderLeft: UNIT_WANDER_TICKS_TEST,
+    restTicks: 0,
+  };
+
+  // Force direction index 0 → [-1, -1] (up-left) — wraps from [0][0] to [4][4]
+  const deterministicRng5 = () => 0 / 8;
+  moveUnitsTest(cells5, width, height, deterministicRng5);
+
+  assert.ok(!cells5[0][0].unit, 'Unit should leave corner cell [0][0]');
+  assert.ok(cells5[4][4].unit, 'Unit should wrap diagonally to opposite corner [4][4]');
+  assert.strictEqual(cells5[4][4].unit.row, 4, 'Wrapped unit row should be 4');
+  assert.strictEqual(cells5[4][4].unit.col, 4, 'Wrapped unit col should be 4');
+
+  // Test 6: sea unit wraps across water edges (verify terrain check still applies after wrap)
+  const cells6 = buildGrid(width, height, 'water');
+  cells6[0][2].civilization = { stage: 1 };
+  cells6[0][2].unit = {
+    emoji: '🛶',
+    stage: 1,
+    movementType: 'sea',
+    row: 0,
+    col: 2,
+    wanderLeft: UNIT_WANDER_TICKS_TEST,
+    restTicks: 0,
+  };
+
+  // Force direction index 1 → [-1, 0] (up) — wraps to [4][2], which is water, so sea unit can enter
+  const deterministicRng6 = () => 1 / 8;
+  moveUnitsTest(cells6, width, height, deterministicRng6);
+
+  assert.ok(!cells6[0][2].unit, 'Sea unit should leave top edge');
+  assert.ok(cells6[4][2].unit, 'Sea unit should wrap to bottom row on water');
+  assert.strictEqual(cells6[4][2].unit.row, 4, 'Wrapped sea unit row should be 4');
+
+  // Test 7: sea unit at edge tries to wrap but target is land — should NOT move
+  const cells7 = buildGrid(width, height, 'water');
+  // Make the wrap-around target cell land
+  cells7[4][2].biome = 'grassland';
+  cells7[0][2].civilization = { stage: 1 };
+  cells7[0][2].unit = {
+    emoji: '🛶',
+    stage: 1,
+    movementType: 'sea',
+    row: 0,
+    col: 2,
+    wanderLeft: UNIT_WANDER_TICKS_TEST,
+    restTicks: 0,
+  };
+
+  // Force direction index 1 → [-1, 0] (up) — wraps to [4][2] which is land, sea can't enter
+  const deterministicRng7 = () => 1 / 8;
+  moveUnitsTest(cells7, width, height, deterministicRng7);
+
+  assert.ok(cells7[0][2].unit, 'Sea unit should stay at origin — wrap target is land');
+  assert.strictEqual(cells7[0][2].unit.row, 0, 'Unit row unchanged when blocked by terrain after wrap');
+  assert.strictEqual(cells7[0][2].unit.col, 2, 'Unit col unchanged when blocked by terrain after wrap');
+
+  console.log('  T34h moveUnits toroidal wrap-around at map edges: PASS');
+})();
+
 // --- T34i: settleUnit — unit settles on empty cell, creates civ at unit's stage ---
 (function testSettleUnitCreatesCiv() {
   const width = 5, height = 5;
