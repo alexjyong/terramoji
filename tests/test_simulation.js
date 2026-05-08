@@ -1679,4 +1679,106 @@ function moveUnitsTest(cells, width, height, rng) {
   console.log('  T34g moveUnits allows air unit to cross any terrain: PASS');
 })();
 
+// --- T34i: settleUnit — unit settles on empty cell, creates civ at unit's stage ---
+(function testSettleUnitCreatesCiv() {
+  const width = 5, height = 5;
+  const cells = buildGrid(width, height, 'grassland');
+
+  // Place a Bronze (stage 1) civilization at [2][2] with a unit
+  cells[2][2].civilization = { stage: 1 };
+  cells[2][2].unit = {
+    emoji: '🏇',
+    stage: 1,
+    movementType: 'land',
+    row: 2,
+    col: 2,
+    wanderLeft: 1, // will hit 0 after this move — should settle
+    restTicks: 0,
+  };
+
+  // Target cell [2][1] has no civilization — unit should settle there
+  assert.strictEqual(cells[2][1].civilization, null, 'Target cell should have no civ before move');
+
+  // Force direction index 3 → [0, -1] (left) — target is [2][1]
+  const deterministicRng = () => 3 / 8;
+  moveUnitsTest(cells, width, height, deterministicRng);
+
+  // Unit should have settled: unit disappears, civ created at unit's stage
+  assert.ok(!cells[2][2].unit, 'Unit should no longer be at origin cell after settling');
+  assert.ok(!cells[2][1].unit, 'Unit should disappear from target cell after settling');
+  assert.ok(cells[2][1].civilization, 'Target cell should now have a civilization');
+  assert.strictEqual(cells[2][1].civilization.stage, 1,
+    'New civ stage should match unit stage (Bronze, stage 1)');
+
+  // Test 2: unit at higher stage settles and creates matching civ
+  const cells2 = buildGrid(width, height, 'grassland');
+  cells2[2][2].civilization = { stage: 3 }; // Industrial
+  cells2[2][2].unit = {
+    emoji: '🚂',
+    stage: 3,
+    movementType: 'land',
+    row: 2,
+    col: 2,
+    wanderLeft: 1, // settle after this move
+    restTicks: 0,
+  };
+
+  // Force direction index 4 → [0, 1] (right) — target is [2][3]
+  const deterministicRng2 = () => 4 / 8;
+  moveUnitsTest(cells2, width, height, deterministicRng2);
+
+  assert.ok(!cells2[2][3].unit, 'Unit should disappear after settling');
+  assert.ok(cells2[2][3].civilization, 'Target cell should have new civilization');
+  assert.strictEqual(cells2[2][3].civilization.stage, 3,
+    'New civ stage should match unit stage (Industrial, stage 3)');
+
+  // Test 3: unit does NOT settle when wanderLeft > 0 (still wandering)
+  const cells3 = buildGrid(width, height, 'grassland');
+  cells3[2][2].civilization = { stage: 2 };
+  cells3[2][2].unit = {
+    emoji: '🐪',
+    stage: 2,
+    movementType: 'land',
+    row: 2,
+    col: 2,
+    wanderLeft: 5, // still has 5 ticks left — should NOT settle
+    restTicks: 0,
+  };
+
+  const deterministicRng3 = () => 3 / 8; // left → [2][1]
+  moveUnitsTest(cells3, width, height, deterministicRng3);
+
+  assert.ok(!cells3[2][2].unit, 'Unit should leave origin cell');
+  assert.ok(cells3[2][1].unit, 'Unit should still exist at target cell (not settled)');
+  assert.strictEqual(cells3[2][1].unit.wanderLeft, 4, 'wanderLeft should decrement to 4');
+  assert.strictEqual(cells3[2][1].civilization, null,
+    'Target cell should NOT have civ — unit still wandering');
+
+  // Test 4: unit does NOT settle when target cell already has a civilization
+  const cells4 = buildGrid(width, height, 'grassland');
+  cells4[2][2].civilization = { stage: 1 };
+  cells4[2][2].unit = {
+    emoji: '🏇',
+    stage: 1,
+    movementType: 'land',
+    row: 2,
+    col: 2,
+    wanderLeft: 1, // would settle if target empty
+    restTicks: 0,
+  };
+  // Target cell already has a civ
+  cells4[2][1].civilization = { stage: 0 };
+
+  const deterministicRng4 = () => 3 / 8; // left → [2][1]
+  moveUnitsTest(cells4, width, height, deterministicRng4);
+
+  // Unit moves to the cell but does NOT settle (civ already exists)
+  assert.ok(!cells4[2][2].unit, 'Unit should leave origin cell');
+  assert.ok(cells4[2][1].unit, 'Unit should remain on target cell (did not settle)');
+  assert.strictEqual(cells4[2][1].civilization.stage, 0,
+    'Existing civ stage should be unchanged (not overwritten by settling unit)');
+
+  console.log('  T34i settleUnit creates civ at unit stage on empty cell: PASS');
+})();
+
 console.log('\nAll simulation tests passed (including T31-T34).');
