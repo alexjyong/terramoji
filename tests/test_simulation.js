@@ -1300,10 +1300,13 @@ function moveUnitsTest(cells, width, height, rng) {
       unit.col = nc;
       unit.wanderLeft -= 1;
 
-      // Settle only after wandering long enough and target has no civilization
-      if (unit.wanderLeft <= 0 && !targetCell.civilization) {
-        targetCell.civilization = { stage: unit.stage };
-        cells[nr][nc].unit = null; // unit disappears — settled
+      // Settle after wandering long enough
+      if (unit.wanderLeft <= 0) {
+        // If target has no civilization, create one at unit's stage
+        if (!targetCell.civilization) {
+          targetCell.civilization = { stage: unit.stage };
+        }
+        cells[nr][nc].unit = null; // unit disappears — settled (absorbed)
       } else {
         cells[nr][nc].unit = unit;
       }
@@ -1933,13 +1936,202 @@ function moveUnitsTest(cells, width, height, rng) {
   const deterministicRng4 = () => 3 / 8; // left → [2][1]
   moveUnitsTest(cells4, width, height, deterministicRng4);
 
-  // Unit moves to the cell but does NOT settle (civ already exists)
+  // Unit moves to the cell and settles (disappears, absorbed by existing civ)
   assert.ok(!cells4[2][2].unit, 'Unit should leave origin cell');
-  assert.ok(cells4[2][1].unit, 'Unit should remain on target cell (did not settle)');
+  assert.ok(!cells4[2][1].unit, 'Unit should disappear on target cell (absorbed by existing civ)');
   assert.strictEqual(cells4[2][1].civilization.stage, 0,
     'Existing civ stage should be unchanged (not overwritten by settling unit)');
 
   console.log('  T34i settleUnit creates civ at unit stage on empty cell: PASS');
+})();
+
+// --- T34j: settleUnit — verify unit disappears when settling on existing civ cell ---
+(function testSettleUnitDisappearsOnExistingCiv() {
+  const width = 5, height = 5;
+
+  // Test 1: land unit with wanderLeft=1 moves onto a cell that already has a civ
+  // Unit should disappear (absorbed by existing civilization)
+  const cells1 = buildGrid(width, height, 'grassland');
+  cells1[2][2].civilization = { stage: 1 };
+  cells1[2][2].unit = {
+    emoji: '🏇',
+    stage: 1,
+    movementType: 'land',
+    row: 2,
+    col: 2,
+    wanderLeft: 1, // will hit 0 after this move — should settle
+    restTicks: 0,
+  };
+  // Target cell [2][1] already has a civilization
+  cells1[2][1].civilization = { stage: 2 };
+
+  const deterministicRng1 = () => 3 / 8; // left → [2][1]
+  moveUnitsTest(cells1, width, height, deterministicRng1);
+
+  // Unit should have disappeared — absorbed by existing civ
+  assert.ok(!cells1[2][2].unit, 'Unit should no longer be at origin cell');
+  assert.ok(!cells1[2][1].unit, 'Unit should disappear from target cell (absorbed by existing civ)');
+  assert.strictEqual(cells1[2][1].civilization.stage, 2,
+    'Existing civ stage should be unchanged');
+
+  // Test 2: sea unit settles on existing civ cell
+  const cells2 = buildGrid(width, height, 'water');
+  cells2[2][2].civilization = { stage: 1 };
+  cells2[2][2].unit = {
+    emoji: '🛶',
+    stage: 1,
+    movementType: 'sea',
+    row: 2,
+    col: 2,
+    wanderLeft: 1,
+    restTicks: 0,
+  };
+  cells2[2][3].civilization = { stage: 0 };
+
+  const deterministicRng2 = () => 4 / 8; // right → [2][3]
+  moveUnitsTest(cells2, width, height, deterministicRng2);
+
+  assert.ok(!cells2[2][2].unit, 'Sea unit should leave origin');
+  assert.ok(!cells2[2][3].unit, 'Sea unit should disappear on existing civ cell');
+  assert.strictEqual(cells2[2][3].civilization.stage, 0,
+    'Existing civ stage unchanged after absorption');
+
+  // Test 3: air unit settles on existing civ cell
+  const cells3 = buildGrid(width, height, 'grassland');
+  cells3[2][2].civilization = { stage: 4 };
+  cells3[2][2].unit = {
+    emoji: '✈️',
+    stage: 4,
+    movementType: 'air',
+    row: 2,
+    col: 2,
+    wanderLeft: 1,
+    restTicks: 0,
+  };
+  cells3[2][1].civilization = { stage: 3 };
+
+  const deterministicRng3 = () => 3 / 8; // left → [2][1]
+  moveUnitsTest(cells3, width, height, deterministicRng3);
+
+  assert.ok(!cells3[2][2].unit, 'Air unit should leave origin');
+  assert.ok(!cells3[2][1].unit, 'Air unit should disappear on existing civ cell');
+  assert.strictEqual(cells3[2][1].civilization.stage, 3,
+    'Existing civ stage unchanged after absorption');
+
+  // Test 4: unit does NOT disappear when wanderLeft > 0 even on existing civ cell
+  const cells4 = buildGrid(width, height, 'grassland');
+  cells4[2][2].civilization = { stage: 1 };
+  cells4[2][2].unit = {
+    emoji: '🏇',
+    stage: 1,
+    movementType: 'land',
+    row: 2,
+    col: 2,
+    wanderLeft: 5, // still wandering — should NOT disappear
+    restTicks: 0,
+  };
+  cells4[2][1].civilization = { stage: 0 };
+
+  const deterministicRng4 = () => 3 / 8; // left → [2][1]
+  moveUnitsTest(cells4, width, height, deterministicRng4);
+
+  assert.ok(!cells4[2][2].unit, 'Unit should leave origin');
+  assert.ok(cells4[2][1].unit, 'Unit should remain on target — still wandering');
+  assert.strictEqual(cells4[2][1].unit.wanderLeft, 4, 'wanderLeft should decrement to 4');
+
+  console.log('  T34j settleUnit unit disappears when settling on existing civ cell: PASS');
+})();
+
+// --- T34k: unit restTicks — unit rests 1 tick on spawn before moving ---
+(function testUnitRestTicks() {
+  const width = 5, height = 5;
+
+  // Test 1: freshly spawned unit (restTicks=1) stays in place during first move call
+  const cells1 = buildGrid(width, height, 'grassland');
+  cells1[2][2].civilization = { stage: 1 };
+  cells1[2][2].unit = {
+    emoji: '🏇',
+    stage: 1,
+    movementType: 'land',
+    row: 2,
+    col: 2,
+    wanderLeft: UNIT_WANDER_TICKS_TEST,
+    restTicks: 1, // just spawned — should rest this tick
+  };
+
+  moveUnitsTest(cells1, width, height, () => 0);
+
+  assert.ok(cells1[2][2].unit, 'Unit should remain at origin cell during rest tick');
+  assert.strictEqual(cells1[2][2].unit.row, 2, 'Unit row unchanged during rest');
+  assert.strictEqual(cells1[2][2].unit.col, 2, 'Unit col unchanged during rest');
+  assert.strictEqual(cells1[2][2].unit.restTicks, 0, 'restTicks should decrement to 0');
+  // wanderLeft should NOT decrement during rest
+  assert.strictEqual(cells1[2][2].unit.wanderLeft, UNIT_WANDER_TICKS_TEST,
+    'wanderLeft should not decrement during rest tick');
+
+  // Test 2: after rest is over (restTicks=0), unit moves on next call
+  moveUnitsTest(cells1, width, height, () => 3 / 8); // direction index 3 → [0,-1] left → [2][1]
+
+  assert.ok(!cells1[2][2].unit, 'Unit should leave origin after rest is over');
+  assert.ok(cells1[2][1].unit, 'Unit should now be at adjacent cell [2][1]');
+  assert.strictEqual(cells1[2][1].unit.row, 2, 'Unit row should be 2');
+  assert.strictEqual(cells1[2][1].unit.col, 1, 'Unit col should be 1');
+  assert.strictEqual(cells1[2][1].unit.wanderLeft, UNIT_WANDER_TICKS_TEST - 1,
+    'wanderLeft should decrement after first real move');
+
+  // Test 3: unit with restTicks=0 moves immediately (no rest)
+  const cells2 = buildGrid(width, height, 'grassland');
+  cells2[2][2].civilization = { stage: 1 };
+  cells2[2][2].unit = {
+    emoji: '🏇',
+    stage: 1,
+    movementType: 'land',
+    row: 2,
+    col: 2,
+    wanderLeft: UNIT_WANDER_TICKS_TEST,
+    restTicks: 0, // not resting — should move immediately
+  };
+
+  moveUnitsTest(cells2, width, height, () => 4 / 8); // direction index 4 → [0,1] right → [2][3]
+
+  assert.ok(!cells2[2][2].unit, 'Unit should leave origin — no rest');
+  assert.ok(cells2[2][3].unit, 'Unit should be at [2][3]');
+  assert.strictEqual(cells2[2][3].unit.col, 3, 'Unit col should be 3');
+
+  // Test 4: unit with restTicks > 1 rests for multiple ticks
+  const cells3 = buildGrid(width, height, 'grassland');
+  cells3[2][2].civilization = { stage: 1 };
+  cells3[2][2].unit = {
+    emoji: '🏇',
+    stage: 1,
+    movementType: 'land',
+    row: 2,
+    col: 2,
+    wanderLeft: UNIT_WANDER_TICKS_TEST,
+    restTicks: 3, // should rest for 3 ticks
+  };
+
+  // First tick — rest
+  moveUnitsTest(cells3, width, height, () => 0);
+  assert.ok(cells3[2][2].unit, 'Unit should still be at origin after tick 1');
+  assert.strictEqual(cells3[2][2].unit.restTicks, 2, 'restTicks should be 2');
+
+  // Second tick — rest
+  moveUnitsTest(cells3, width, height, () => 0);
+  assert.ok(cells3[2][2].unit, 'Unit should still be at origin after tick 2');
+  assert.strictEqual(cells3[2][2].unit.restTicks, 1, 'restTicks should be 1');
+
+  // Third tick — rest
+  moveUnitsTest(cells3, width, height, () => 0);
+  assert.ok(cells3[2][2].unit, 'Unit should still be at origin after tick 3');
+  assert.strictEqual(cells3[2][2].unit.restTicks, 0, 'restTicks should be 0');
+
+  // Fourth tick — finally moves
+  moveUnitsTest(cells3, width, height, () => 1 / 8); // direction index 1 → [-1,0] up → [1][2]
+  assert.ok(!cells3[2][2].unit, 'Unit should leave origin after rest expires');
+  assert.ok(cells3[1][2].unit, 'Unit should be at [1][2]');
+
+  console.log('  T34k unit restTicks — unit rests on spawn before moving: PASS');
 })();
 
 console.log('\nAll simulation tests passed (including T31-T34).');

@@ -605,10 +605,13 @@ function moveUnits() {
       unit.col = nc;
       unit.wanderLeft -= 1;
 
-      // Settle only after wandering long enough and target has no civilization
-      if (unit.wanderLeft <= 0 && !targetCell.civilization) {
-        targetCell.civilization = { stage: unit.stage };
-        cells[nr][nc].unit = null; // unit disappears — settled
+      // Settle after wandering long enough
+      if (unit.wanderLeft <= 0) {
+        // If target has no civilization, create one at unit's stage
+        if (!targetCell.civilization) {
+          targetCell.civilization = { stage: unit.stage };
+        }
+        cells[nr][nc].unit = null; // unit disappears — settled (absorbed)
       } else {
         cells[nr][nc].unit = unit;
       }

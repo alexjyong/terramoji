@@ -246,8 +246,8 @@
   - [x] **T34g** Test `moveUnits()` — verify air unit can cross any terrain
   - [x] **T34h** Test `moveUnits()` — verify toroidal wrap-around at map edges
   - [x] **T34i** Test `settleUnit()` — verify unit settles on empty cell, creates civ at unit's stage
-  - [ ] **T34j** Test `settleUnit()` — verify unit disappears when settling on existing civ cell
-  - [ ] **T34k** Test unit restTicks — unit rests 1 tick on spawn before moving
+  - [x] **T34j** Test `settleUnit()` — verify unit disappears when settling on existing civ cell
+  - [x] **T34k** Test unit restTicks — unit rests 1 tick on spawn before moving
 
 - [ ] **T35** Add tests for unit cap enforcement and planet reset clearing units
   - _File: `tests/test_simulation.js`_
