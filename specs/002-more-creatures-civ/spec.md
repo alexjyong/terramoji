@@ -172,6 +172,12 @@ When the player inspects a tile containing a mobile unit, the tooltip identifies
 - **FR-025**: Mobile units MUST render as emoji overlay on the cell they occupy
 - **FR-026**: Inspect tooltip MUST display mobile unit info when present
 
+### Testing Requirements
+
+- **TR-001**: Simulation tests (`tests/test_simulation.js`) MUST call the actual game functions from `js/simulation.js` (e.g., `spawnUnit()`, `moveUnits()`, `countActiveUnits()`, `clearAllUnits()`). Tests MUST NOT use replica helper functions that duplicate game logic, because diverging replicas create silent false positives.
+- **TR-002**: When browser globals (`state`, `document`) are required, tests MUST load real source files via the eval-IIFE pattern (as used in `tests/test_renderer.js`) and manipulate the real `state` object directly.
+- **TR-003**: Deterministic behavior MUST be achieved by monkey-patching `Math.random` with a seeded PRNG (e.g., `mulberry32`) before calling real functions, not by rewriting the functions to accept an RNG parameter.
+
 ### Key Entities
 
 - **CreatureType**: Expanded set of ~25 creatures, each with emoji and compatible biome list (many-to-many)
