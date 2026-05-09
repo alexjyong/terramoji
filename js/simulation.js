@@ -21,6 +21,7 @@ const state = {
   grid: { width: 30, height: 30, cells: [] },
   tick: 0,
   selectedBiome: null,
+  selectedCivStage: null,
   inspectMode: false,
   monolithMode: false,
   civMode: false,
@@ -463,10 +464,15 @@ function createCivilization(row, col) {
   const cell = state.grid.cells[row][col];
   if (!cell) return false;
 
-  // Monolith mode: found the very first civilization (requires creatures, one-per-planet)
+  // Monolith mode
   if (state.monolithMode) {
+    // If cell already has a civilization → advance it + spawn unit
+    if (cell.civilization) {
+      return advanceCivCell(row, col);
+    }
+    // Otherwise: found the very first civilization (requires creatures, one-per-planet)
     if (hasAnyCivilization()) {
-      showStatus('⚠️ A civilization already exists on this planet!', 'error');
+      showStatus('⚠️ A civilization already exists — tap its tile with Monolith to advance!', 'error');
       return false;
     }
     if (!cell.creatures || cell.creatures.length === 0) {
@@ -502,6 +508,45 @@ function createCivilization(row, col) {
   cell.civilization = { stage: maxStage };
   const tech = TECH_STAGES[maxStage];
   showStatus(`${tech.emoji} New ${tech.name} city founded!`, 'success');
+  return true;
+}
+
+// --- T39c: Place civilization at a specific stage (from civ picker) ---
+function createCivilizationAtStage(row, col, stage) {
+  const cell = state.grid.cells[row][col];
+  if (!cell) return false;
+  if (cell.civilization) {
+    showStatus('⚠️ Cell already has a civilization!', 'error');
+    return false;
+  }
+  if (!hasAnyCivilization()) {
+    showStatus('⚠️ No civilization exists yet — use a Monolith first!', 'error');
+    return false;
+  }
+  cell.civilization = { stage };
+  const tech = TECH_STAGES[stage];
+  showStatus(`${tech.emoji} New ${tech.name} city founded!`, 'success');
+  return true;
+}
+
+// --- T39d: Advance a civilization cell (monolith tap on existing civ) ---
+function advanceCivCell(row, col) {
+  const cell = state.grid.cells[row][col];
+  if (!cell.civilization) return false;
+  if (cell.civilization.stage >= TECH_STAGES.length - 1) {
+    showStatus(`🔮 Already at Nanotech — can't advance further!`, 'info');
+    return false;
+  }
+  const oldStage = cell.civilization.stage;
+  cell.civilization.stage += 1;
+  const newTech = TECH_STAGES[cell.civilization.stage];
+  const oldTech = TECH_STAGES[oldStage];
+  showStatus(`🗿 Advanced from ${oldTech.emoji} ${oldTech.name} → ${newTech.emoji} ${newTech.name}!`, 'success');
+
+  // Force-spawn a unit if none present and stage allows
+  if (!cell.unit && cell.civilization.stage <= 5) {
+    spawnUnit(row, col);
+  }
   return true;
 }
 

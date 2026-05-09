@@ -1,7 +1,7 @@
 # Tasks: More Creatures & Civilization Mode
 
 **Branch**: `002-more-creatures-civ` | **Date**: 2026-04-30
-**Total**: 35 tasks across 6 phases
+**Total**: 47 tasks across 8 phases
 
 ## Phase 1: Expanded Creature Roster (done)
 
@@ -278,3 +278,62 @@
 - [ ] **T38** ⚠️ Manual verification — quickstart scenarios from `quickstart.md`
   - Launch game in browser, create civ, watch it advance, watch units spread
   - _Depends on: T37_
+
+## Phase 8: Civ Picker, Monolith Advance, Unit Size, Tooltip Fix
+
+- [x] **T39a** Add civ picker overlay panel to `index.html`
+  - `<div id="civ-picker" class="civ-picker hidden">` with close button and stage buttons container
+  - Positioned below toolbar, horizontal scrollable row
+  - _File: `index.html`_
+
+- [x] **T39b** Implement civ picker logic
+  - `showCivPicker()`: scan grid for active stages, build buttons (active = clickable, unreached = greyed out)
+  - Click active stage → set `state.selectedCivStage`, hide picker, enter placement mode
+  - Click greyed stage → status "That tech hasn't been reached yet!"
+  - After placement, exit mode
+  - `#btn-civ-close` hides picker, deselects
+  - Replace `civBtn` handler to call `showCivPicker()` instead of `state.civMode = true`
+  - Update `deselectAllTools()` to clear `state.selectedCivStage`
+  - _File: `js/input.js`_
+  - _Depends on: T39a_
+
+- [x] **T39c** Implement `createCivilizationAtStage(row, col, stage)`
+  - Places `{ stage }` on cell, validates cell has no civ
+  - Status: `${TECH_STAGES[stage].emoji} New ${TECH_STAGES[stage].name} city founded!`
+  - _File: `js/simulation.js`_
+
+- [x] **T39d** Monolith advances existing civ or spawns unit
+  - Tapping civ cell in monolith mode: advance stage++ (guaranteed), force-spawn unit if none present
+  - Tapping creatures cell: same as current (found new civ)
+  - Tapping empty cell: status "Nothing here to civilize!"
+  - _Files: `js/simulation.js`, `js/input.js`_
+  - _Depends on: T39c_
+
+- [x] **T39e** Style civ picker panel
+  - Flex row, dark semi-transparent background, green active buttons, greyed disabled buttons
+  - `.civ-picker.hidden` = `display: none`
+  - _File: `css/game.css`_
+  - _Depends on: T39a_
+
+- [x] **T40** Increase unit overlay font size
+  - `.unit-overlay` font-size: `10px` → `13px`
+  - _File: `css/game.css`_
+
+- [x] **T41** Fix inspect tooltip dismissing too easily
+  - Removed `inspectJustShown` flag that dismissed on slightest pointer movement
+  - Dismiss only on tap outside tooltip, Escape key, or tooltip self-click
+  - _File: `js/input.js`_
+
+- [x] **T42** Update tests for new behavior
+  - Added T31i: monolith advances existing civ
+  - Added T31j: monolith advance caps at Nanotech
+  - Added T31k: createCivilizationAtStage places at specific stage
+  - Added T31l: advanceCivCell advances + spawns unit
+  - Updated T31c message for new behavior
+  - _Files: `tests/test_simulation.js`_
+  - _Depends on: T39c, T39d_
+
+- [x] **T43** Run full test suite, fix any failures
+  - 49/49 simulation tests passed
+  - 13/13 renderer tests passed
+  - _Files: `tests/test_simulation.js`, `tests/test_renderer.js`_

@@ -17,8 +17,12 @@
       <button id="btn-pause">⏸️ Pause</button>
       <button id="btn-inspect" title="Inspect tile">🔍 Inspect</button>
       <div class="civ-buttons">
-        <button id="btn-monolith" title="Create civilization (requires creatures)">🗿 Monolith</button>
-        <button id="btn-civ" title="Place civilization anywhere">🏠 Civ</button>
+        <button id="btn-monolith" title="Create/advance civilization">🗿 Monolith</button>
+        <button id="btn-civ" title="Pick a tech stage to place">🏠 Civ</button>
+      </div>
+      <div id="civ-picker" class="civ-picker hidden">
+        <button id="btn-civ-close" title="Close">✕</button>
+        <div id="civ-picker-stages"></div>
       </div>
       <div class="biome-buttons">
         <button data-biome="water" title="Water">🌊</button>

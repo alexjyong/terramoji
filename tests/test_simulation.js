@@ -93,7 +93,7 @@ function loadSimulation() {
         spawnCreatures, moveCreatures, tick, startSimulation,
         removeIncompatibleCreatures, changeCellBiome, createCreature,
         totalCreatures, getCreaturesForBiome,
-        createCivilization, advanceCivilization,
+        createCivilization, advanceCivilization, createCivilizationAtStage, advanceCivCell,
         clearAllUnits, countActiveUnits, spawnUnit, moveUnits,
         hasAnyCivilization, hasAnyCreatures,
       };
@@ -110,7 +110,7 @@ const {
   spawnCreatures, moveCreatures, tick, startSimulation,
   removeIncompatibleCreatures, changeCellBiome, createCreature,
   totalCreatures, getCreaturesForBiome,
-  createCivilization, advanceCivilization,
+  createCivilization, advanceCivilization, createCivilizationAtStage, advanceCivCell,
   clearAllUnits, countActiveUnits, spawnUnit, moveUnits,
   hasAnyCivilization, hasAnyCreatures,
 } = loadSimulation();
@@ -447,7 +447,7 @@ function directionRng(index) {
   console.log('  T31b monolith rejects tile without creatures: PASS');
 })();
 
-// --- T31c: Monolith enforces one-per-planet guard ---
+// --- T31c: Monolith enforces one-per-planet guard for founding ---
 (function testMonolithOnePerPlanet() {
   state.grid.width = 5;
   state.grid.height = 5;
@@ -461,13 +461,106 @@ function directionRng(index) {
   let res = createCivilization(2, 2);
   assert.strictEqual(res, true, 'First monolith should succeed');
 
-  // Second monolith on a different tile with creatures must fail
+  // Second monolith on a different tile with creatures must fail (can't found another)
   res = createCivilization(1, 1);
-  assert.strictEqual(res, false, 'Second monolith should fail (one-per-planet)');
+  assert.strictEqual(res, false, 'Second monolith should fail (can\'t found another)');
   assert.strictEqual(state.grid.cells[1][1].civilization, null, 'Second cell should remain without civ');
 
   state.monolithMode = false;
   console.log('  T31c monolith one-per-planet guard: PASS');
+})();
+
+// --- T31i: Monolith advances existing civ on tap ---
+(function testMonolithAdvancesExistingCiv() {
+  state.grid.width = 5;
+  state.grid.height = 5;
+  state.grid.cells = buildGrid(5, 5, 'grassland');
+  state.monolithMode = true;
+
+  // Found first civ
+  state.grid.cells[2][2].creatures.push(createCreature('cow', 2, 2));
+  createCivilization(2, 2);
+  assert.strictEqual(state.grid.cells[2][2].civilization.stage, 0, 'Civ should be stage 0');
+
+  // Tap monolith on same civ tile → advances
+  const res = createCivilization(2, 2);
+  assert.strictEqual(res, true, 'Monolith advance should succeed');
+  assert.strictEqual(state.grid.cells[2][2].civilization.stage, 1, 'Civ should advance to stage 1');
+
+  // Tap again → advances again
+  createCivilization(2, 2);
+  assert.strictEqual(state.grid.cells[2][2].civilization.stage, 2, 'Civ should advance to stage 2');
+
+  // Tap on empty tile (no creatures, no civ) → fails
+  state.grid.cells[0][0].biome = 'grassland';
+  const emptyRes = createCivilization(0, 0);
+  assert.strictEqual(emptyRes, false, 'Monolith on empty tile should fail');
+
+  state.monolithMode = false;
+  console.log('  T31i monolith advances existing civ on tap: PASS');
+})();
+
+// --- T31j: Monolith advance caps at Nanotech ---
+(function testMonolithAdvanceCapsAtNanotech() {
+  state.grid.width = 3;
+  state.grid.height = 3;
+  state.grid.cells = buildGrid(3, 3, 'grassland');
+  state.monolithMode = true;
+
+  state.grid.cells[1][1].civilization = { stage: 6 }; // Nanotech
+  const res = createCivilization(1, 1);
+  assert.strictEqual(res, false, 'Should not advance beyond Nanotech');
+  assert.strictEqual(state.grid.cells[1][1].civilization.stage, 6, 'Stage should remain 6');
+
+  state.monolithMode = false;
+  console.log('  T31j monolith advance caps at Nanotech: PASS');
+})();
+
+// --- T31k: createCivilizationAtStage places at specific stage ---
+(function testCreateCivilizationAtStage() {
+  state.grid.width = 5;
+  state.grid.height = 5;
+  state.grid.cells = buildGrid(5, 5, 'grassland');
+
+  // Seed a civ so planet has civilization
+  state.grid.cells[0][0].civilization = { stage: 0 };
+
+  // Place at stage 2 (Iron)
+  const res = createCivilizationAtStage(2, 2, 2);
+  assert.strictEqual(res, true, 'Should succeed');
+  assert.strictEqual(state.grid.cells[2][2].civilization.stage, 2, 'Should be stage 2 (Iron)');
+
+  // Place at stage 0 (Stone)
+  createCivilizationAtStage(3, 3, 0);
+  assert.strictEqual(state.grid.cells[3][3].civilization.stage, 0, 'Should be stage 0 (Stone)');
+
+  // Reject occupied cell
+  const fail = createCivilizationAtStage(2, 2, 3);
+  assert.strictEqual(fail, false, 'Should reject occupied cell');
+
+  console.log('  T31k createCivilizationAtStage places at specific stage: PASS');
+})();
+
+// --- T31l: advanceCivCell advances + spawns unit ---
+(function testAdvanceCivCell() {
+  state.grid.width = 5;
+  state.grid.height = 5;
+  state.grid.cells = buildGrid(5, 5, 'grassland');
+
+  state.grid.cells[2][2].civilization = { stage: 1 };
+  advanceCivCell(2, 2);
+
+  assert.strictEqual(state.grid.cells[2][2].civilization.stage, 2, 'Should advance 1→2');
+  assert.ok(state.grid.cells[2][2].unit, 'Should have spawned a unit');
+  assert.strictEqual(state.grid.cells[2][2].unit.stage, 2, 'Unit stage should match civ stage');
+
+  // Advance at Nanotech → no-op
+  state.grid.cells[2][2].civilization.stage = 6;
+  const res = advanceCivCell(2, 2);
+  assert.strictEqual(res, false, 'Should not advance beyond Nanotech');
+  assert.strictEqual(state.grid.cells[2][2].civilization.stage, 6, 'Stage remains 6');
+
+  console.log('  T31l advanceCivCell advances + spawns unit: PASS');
 })();
 
 // --- T31d: Manual civ placement requires existing civilization ---
