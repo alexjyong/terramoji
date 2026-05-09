@@ -89,11 +89,6 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
-// Dismiss tooltip when tapping it
-tooltipEl.addEventListener('click', () => {
-  hideTooltip();
-});
-
 // --- Civilization Placement Tools (T11/T12/T13) ---
 
 const monolithBtn = document.getElementById('btn-monolith');
@@ -187,7 +182,6 @@ function hideCivPicker() {
 // Track whether the user is currently dragging across cells
 let isPainting = false;
 let renderPending = false;
-let inspectJustShown = false;
 
 gridEl.addEventListener('pointerdown', (e) => {
   const cellDiv = e.target.closest('.cell');
@@ -202,7 +196,6 @@ function handleCellInteraction(cellDiv) {
     const row = parseInt(cellDiv.dataset.row, 10);
     const col = parseInt(cellDiv.dataset.col, 10);
     showInspectTooltip(row, col, cellDiv);
-    inspectJustShown = true;
     return;
   }
 
@@ -245,13 +238,7 @@ function handleCellInteraction(cellDiv) {
 }
 
 // Drag-to-paint: only fire while actively painting
-// If user drags after an inspect tap, dismiss stale tooltip
 gridEl.addEventListener('pointermove', (e) => {
-  if (inspectJustShown) {
-    inspectJustShown = false;
-    hideTooltip(); // dismiss — content would be stale
-  }
-
   if (!isPainting) return;
   const cellDiv = e.target.closest('.cell');
   if (!cellDiv) return;
@@ -261,7 +248,6 @@ gridEl.addEventListener('pointermove', (e) => {
 // Stop painting when pointer is released anywhere on the page
 document.addEventListener('pointerup', () => {
   isPainting = false;
-  inspectJustShown = false; // reset so next tap works cleanly
 });
 
 function paintCell(cellDiv) {
