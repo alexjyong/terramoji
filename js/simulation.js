@@ -515,6 +515,15 @@ function advanceCivilization(cell) {
 
 // --- Mobile Unit Logic ---
 
+function clearAllUnits() {
+  const { cells, width, height } = state.grid;
+  for (let r = 0; r < height; r++) {
+    for (let c = 0; c < width; c++) {
+      cells[r][c].unit = null;
+    }
+  }
+}
+
 function countActiveUnits() {
   const { cells, width, height } = state.grid;
   let count = 0;

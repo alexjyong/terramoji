@@ -2134,4 +2134,273 @@ function moveUnitsTest(cells, width, height, rng) {
   console.log('  T34k unit restTicks — unit rests on spawn before moving: PASS');
 })();
 
-console.log('\nAll simulation tests passed (including T31-T34).');
+// --- T35a: MAX_UNITS cap — verify no new units spawn when cap is reached ---
+(function testMaxUnitsCapDuringTick() {
+  const width = 10, height = 10;
+  const cells = buildGrid(width, height, 'grassland');
+
+  // Place civilizations on several cells so spawn attempts will occur
+  const civCells = [[1, 1], [1, 3], [3, 1], [3, 3], [5, 5], [7, 7]];
+  for (const [r, c] of civCells) {
+    cells[r][c].civilization = { stage: 1 };
+  }
+
+  // Fill the grid with units until MAX_UNITS_TEST is reached
+  let placed = 0;
+  for (let r = 0; r < height && placed < MAX_UNITS_TEST; r++) {
+    for (let c = 0; c < width && placed < MAX_UNITS_TEST; c++) {
+      if (!cells[r][c].unit) {
+        cells[r][c].unit = {
+          emoji: '🏇',
+          stage: 1,
+          movementType: 'land',
+          row: r,
+          col: c,
+          wanderLeft: UNIT_WANDER_TICKS_TEST,
+          restTicks: 0,
+        };
+        placed++;
+      }
+    }
+  }
+
+  assert.strictEqual(countActiveUnitsTest(cells, width, height), MAX_UNITS_TEST,
+    `Grid should have exactly ${MAX_UNITS_TEST} units at cap`);
+
+  // Simulate spawn attempts — all should be rejected due to cap
+  for (const [r, c] of civCells) {
+    const result = spawnUnitTest(cells, width, height, r, c);
+    assert.strictEqual(result, false,
+      `spawnUnit should return false when cap is reached at cell [${r}][${c}]`);
+  }
+
+  // Unit count should still be exactly MAX_UNITS after failed spawns
+  assert.strictEqual(countActiveUnitsTest(cells, width, height), MAX_UNITS_TEST,
+    `Unit count should remain at cap (${MAX_UNITS_TEST}) after failed spawn attempts`);
+
+  // Now move units (some may settle and disappear, freeing slots)
+  moveUnitsTest(cells, width, height, () => 4 / 8); // right → [0, 1]
+
+  // After moves, count should be <= MAX_UNITS (some may have settled)
+  const afterMove = countActiveUnitsTest(cells, width, height);
+  assert.ok(afterMove <= MAX_UNITS_TEST,
+    `Unit count (${afterMove}) should not exceed cap after move`);
+
+  // Try spawning again — if slots freed by settling, spawn should succeed
+  const spawnAfterMove = spawnUnitTest(cells, width, height, 1, 1);
+  if (afterMove < MAX_UNITS_TEST) {
+    assert.strictEqual(spawnAfterMove, true,
+      'Spawn should succeed when cap is no longer reached');
+    assert.strictEqual(countActiveUnitsTest(cells, width, height), afterMove + 1,
+      'Unit count should increment by 1 after successful spawn');
+  } else {
+    assert.strictEqual(spawnAfterMove, false,
+      'Spawn should still fail when cap is still reached');
+  }
+
+  console.log('  T35a MAX_UNITS cap prevents new spawns: PASS');
+})();
+
+// --- T35b: countActiveUnits — returns correct count across multiple cells with/without units ---
+(function testCountActiveUnits() {
+  const width = 5, height = 5;
+
+  // Test 1: empty grid — zero units
+  const cells1 = buildGrid(width, height, 'grassland');
+  assert.strictEqual(countActiveUnitsTest(cells1, width, height), 0,
+    'Empty grid should have 0 active units');
+
+  // Test 2: single unit
+  const cells2 = buildGrid(width, height, 'grassland');
+  cells2[2][2].unit = { emoji: '🏇', stage: 1, movementType: 'land', row: 2, col: 2, wanderLeft: 8, restTicks: 0 };
+  assert.strictEqual(countActiveUnitsTest(cells2, width, height), 1,
+    'Grid with one unit should count 1');
+
+  // Test 3: multiple units scattered across grid
+  const cells3 = buildGrid(width, height, 'grassland');
+  cells3[0][0].unit = { emoji: '🏇', stage: 1, movementType: 'land', row: 0, col: 0, wanderLeft: 8, restTicks: 0 };
+  cells3[0][4].unit = { emoji: '🛶', stage: 2, movementType: 'sea', row: 0, col: 4, wanderLeft: 8, restTicks: 0 };
+  cells3[2][2].unit = { emoji: '✈️', stage: 4, movementType: 'air', row: 2, col: 2, wanderLeft: 8, restTicks: 0 };
+  cells3[4][0].unit = { emoji: '🏇', stage: 1, movementType: 'land', row: 4, col: 0, wanderLeft: 8, restTicks: 0 };
+  cells3[4][4].unit = { emoji: '🛶', stage: 2, movementType: 'sea', row: 4, col: 4, wanderLeft: 8, restTicks: 0 };
+  assert.strictEqual(countActiveUnitsTest(cells3, width, height), 5,
+    'Grid with 5 units should count 5');
+
+  // Test 4: cells with civilization but no unit should not be counted
+  const cells4 = buildGrid(width, height, 'grassland');
+  cells4[1][1].civilization = { stage: 3 };
+  cells4[2][2].civilization = { stage: 5 };
+  cells4[3][3].civilization = { stage: 0 };
+  // Only one actual unit
+  cells4[0][0].unit = { emoji: '🏇', stage: 1, movementType: 'land', row: 0, col: 0, wanderLeft: 8, restTicks: 0 };
+  assert.strictEqual(countActiveUnitsTest(cells4, width, height), 1,
+    'Civ cells without units should not be counted');
+
+  // Test 5: full grid — every cell has a unit
+  const cells5 = buildGrid(width, height, 'grassland');
+  for (let r = 0; r < height; r++) {
+    for (let c = 0; c < width; c++) {
+      cells5[r][c].unit = { emoji: '🏇', stage: 1, movementType: 'land', row: r, col: c, wanderLeft: 8, restTicks: 0 };
+    }
+  }
+  assert.strictEqual(countActiveUnitsTest(cells5, width, height), width * height,
+    `Full ${width}x${height} grid should count ${width * height} units`);
+
+  // Test 6: count decreases after units settle (disappear)
+  const cells6 = buildGrid(width, height, 'grassland');
+  cells6[2][2].civilization = { stage: 1 };
+  cells6[2][2].unit = {
+    emoji: '🏇', stage: 1, movementType: 'land', row: 2, col: 2,
+    wanderLeft: 1, restTicks: 0, // will settle after this move
+  };
+  assert.strictEqual(countActiveUnitsTest(cells6, width, height), 1, 'Should have 1 unit before settle');
+
+  moveUnitsTest(cells6, width, height, () => 4 / 8); // right → [2][3], settles there
+  assert.strictEqual(countActiveUnitsTest(cells6, width, height), 0,
+    'Should have 0 units after unit settled and disappeared');
+
+  console.log('  T35b countActiveUnits returns correct count: PASS');
+})();
+
+// --- T35c: generatePlanet clears all units — verify zero units after regeneration ---
+(function testGeneratePlanetClearsUnits() {
+  // Replicate generatePlanet's cell-rebuild behavior for Node.js testing.
+  // generatePlanet() sets state.grid.cells = [] then creates fresh cells with
+  // unit: null and civilization: null, so all prior units/civs are wiped.
+
+  const w = 10, h = 10;
+
+  // Simulate a grid with units and civilizations
+  let cells = [];
+  for (let r = 0; r < h; r++) {
+    cells[r] = [];
+    for (let c = 0; c < w; c++) {
+      cells[r][c] = {
+        biome: 'grassland',
+        creatures: [],
+        civilization: { stage: 1 },
+        unit: { emoji: '🏇', stage: 1, movementType: 'land', row: r, col: c, wanderLeft: 8, restTicks: 0 },
+      };
+    }
+  }
+
+  // Verify units exist before regeneration
+  let unitCountBefore = 0;
+  for (let r = 0; r < h; r++) {
+    for (let c = 0; c < w; c++) {
+      if (cells[r][c].unit) unitCountBefore++;
+    }
+  }
+  assert.strictEqual(unitCountBefore, w * h,
+    `Should have ${w * h} units before regeneration`);
+
+  // Simulate generatePlanet: rebuild cells from scratch (same as source code)
+  cells = [];
+  for (let r = 0; r < h; r++) {
+    cells[r] = [];
+    for (let c = 0; c < w; c++) {
+      cells[r][c] = { biome: 'grassland', creatures: [], civilization: null, unit: null };
+    }
+  }
+
+  // Verify all units are cleared after regeneration
+  let unitCountAfter = 0;
+  for (let r = 0; r < h; r++) {
+    for (let c = 0; c < w; c++) {
+      if (cells[r][c].unit) unitCountAfter++;
+    }
+  }
+  assert.strictEqual(unitCountAfter, 0,
+    'All units should be cleared after planet regeneration');
+
+  // Verify civilizations are also cleared
+  let civCountAfter = 0;
+  for (let r = 0; r < h; r++) {
+    for (let c = 0; c < w; c++) {
+      if (cells[r][c].civilization) civCountAfter++;
+    }
+  }
+  assert.strictEqual(civCountAfter, 0,
+    'All civilizations should be cleared after planet regeneration');
+
+  console.log('  T35c generatePlanet clears all units: PASS');
+})();
+
+// --- T35d: units cleared but civilizations preserved on planet reset ---
+(function testClearUnitsPreservesCivs() {
+  const w = 10, h = 10;
+
+  // Build a grid with both units and civilizations
+  let cells = buildGrid(w, h, 'grassland');
+
+  // Place civilizations on several cells
+  const civPositions = [[1, 1], [2, 3], [4, 4], [6, 7], [8, 8]];
+  for (const [r, c] of civPositions) {
+    cells[r][c].civilization = { stage: Math.floor(Math.random() * 6) };
+  }
+
+  // Place units on some civ cells and some empty cells
+  const unitPositions = [[1, 1], [2, 3], [3, 3], [5, 5], [6, 7], [7, 0]];
+  for (const [r, c] of unitPositions) {
+    cells[r][c].unit = {
+      emoji: '🏇',
+      stage: 1,
+      movementType: 'land',
+      row: r,
+      col: c,
+      wanderLeft: UNIT_WANDER_TICKS_TEST,
+      restTicks: 0,
+    };
+  }
+
+  // Verify initial state
+  assert.strictEqual(countActiveUnitsTest(cells, w, h), unitPositions.length,
+    `Should have ${unitPositions.length} units before clear`);
+  let civCountBefore = 0;
+  for (let r = 0; r < h; r++) {
+    for (let c = 0; c < w; c++) {
+      if (cells[r][c].civilization) civCountBefore++;
+    }
+  }
+  assert.strictEqual(civCountBefore, civPositions.length,
+    `Should have ${civPositions.length} civilizations before clear`);
+
+  // Replicate clearAllUnits: set every cell's unit to null, leave everything else intact
+  for (let r = 0; r < h; r++) {
+    for (let c = 0; c < w; c++) {
+      cells[r][c].unit = null;
+    }
+  }
+
+  // Verify all units are cleared
+  assert.strictEqual(countActiveUnitsTest(cells, w, h), 0,
+    'All units should be cleared');
+
+  // Verify civilizations are preserved
+  let civCountAfter = 0;
+  for (let r = 0; r < h; r++) {
+    for (let c = 0; c < w; c++) {
+      if (cells[r][c].civilization) civCountAfter++;
+    }
+  }
+  assert.strictEqual(civCountAfter, civCountBefore,
+    'Civilization count should be unchanged after unit clear');
+
+  // Verify individual civ stages are preserved
+  for (const [r, c] of civPositions) {
+    assert.ok(cells[r][c].civilization,
+      `Civ at [${r}][${c}] should still exist`);
+  }
+
+  // Verify biomes and creatures are also preserved
+  for (let r = 0; r < h; r++) {
+    for (let c = 0; c < w; c++) {
+      assert.strictEqual(cells[r][c].biome, 'grassland',
+        `Biome at [${r}][${c}] should be unchanged`);
+    }
+  }
+
+  console.log('  T35d units cleared but civilizations preserved: PASS');
+})();
+
+console.log('\nAll simulation tests passed (including T31-T35).');

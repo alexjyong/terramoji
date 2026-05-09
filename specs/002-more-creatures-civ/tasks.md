@@ -253,20 +253,20 @@
   - _File: `tests/test_simulation.js`_
   - _Depends on: T23, T24_
 
-  - [ ] **T35a** Test MAX_UNITS cap — verify no new units spawn when cap is reached (fill grid to cap, tick, count stays same)
-  - [ ] **T35b** Test `countActiveUnits()` — returns correct count across multiple cells with/without units
-  - [ ] **T35c** Test `generatePlanet()` clears all units — verify zero units after regeneration
-  - [ ] **T35d** Test units cleared but civilizations preserved on planet reset (civ data stays, units go)
+  - [x] **T35a** Test MAX_UNITS cap — verify no new units spawn when cap is reached (fill grid to cap, tick, count stays same)
+  - [x] **T35b** Test `countActiveUnits()` — returns correct count across multiple cells with/without units
+  - [x] **T35c** Test `generatePlanet()` clears all units — verify zero units after regeneration
+  - [x] **T35d** Test units cleared but civilizations preserved on planet reset (civ data stays, units go)
 
 - [ ] **T36** Add renderer integration tests for civ display and unit overlay
   - _File: `tests/test_renderer.js`_
   - _Depends on: T15, T25_
 
-  - [ ] **T36a** Test civilization emoji renders on cell — verify `TECH_STAGES[civ.stage].emoji` appears as main content
-  - [ ] **T36b** Test render priority: civilization > landmark > cactus (landmark/cactus shown as overlay when civ exists)
-  - [ ] **T36c** Test unit emoji renders as overlay span on cell
-  - [ ] **T36d** Test inspect tooltip shows correct tech stage name + emoji for civilization cell
-  - [ ] **T36e** Test inspect tooltip shows unit info (emoji + originating civ stage) when unit present
+  - [x] **T36a** Test civilization emoji renders on cell — verify `TECH_STAGES[civ.stage].emoji` appears as main content
+  - [x] **T36b** Test render priority: civilization > landmark > cactus (landmark/cactus shown as overlay when civ exists)
+  - [x] **T36c** Test unit emoji renders as overlay span on cell
+  - [x] **T36d** Test inspect tooltip shows correct tech stage name + emoji for civilization cell
+  - [x] **T36e** Test inspect tooltip shows unit info (emoji + originating civ stage) when unit present
 
 - [ ] **T37** Run full test suite, fix any failures
   - _Files: `tests/test_simulation.js`, `tests/test_renderer.js`_

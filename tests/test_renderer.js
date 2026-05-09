@@ -113,6 +113,7 @@ function loadModules() {
       ${simCode}
       ${rendCode}
       return { state, BIOMES, BIOME_KEYS, POLE_ROWS, CREATURE_TYPES,
+               TECH_STAGES, UNIT_TYPES,
                mulberry32, generatePlanet, enforcePoles, smoothGrid,
                spawnCreatures, moveCreatures, tick, startSimulation,
                removeIncompatibleCreatures, changeCellBiome, createCreature,
@@ -125,6 +126,7 @@ function loadModules() {
 
 const {
   state, BIOMES, BIOME_KEYS, POLE_ROWS, CREATURE_TYPES,
+  TECH_STAGES, UNIT_TYPES,
   mulberry32, generatePlanet, enforcePoles, smoothGrid,
   spawnCreatures, moveCreatures, tick, startSimulation,
   removeIncompatibleCreatures, changeCellBiome, createCreature,
@@ -379,6 +381,327 @@ const {
   );
 
   console.log(`  T3 all ${creatureNames.length} creature types in tooltip: PASS`);
+})();
+
+// --- T36a: civilization emoji renders on cell as main content ---
+(function testCivEmojiRendersOnCell() {
+  // Set up a small grid with civilizations at known stages
+  const orig = { ...state.grid };
+  state.grid.width = 5;
+  state.grid.height = 5;
+  state.grid.cells = [];
+
+  for (let r = 0; r < 5; r++) {
+    state.grid.cells[r] = [];
+    for (let c = 0; c < 5; c++) {
+      state.grid.cells[r][c] = { biome: 'grassland', creatures: [], civilization: null, unit: null };
+    }
+  }
+
+  // Place civilizations at different stages
+  const civPlacements = [
+    { r: 0, c: 0, stage: 0 }, // Stone 🛖
+    { r: 1, c: 1, stage: 2 }, // Iron 🏰
+    { r: 2, c: 2, stage: 4 }, // Atomic ☢️
+    { r: 3, c: 3, stage: 6 }, // Nanotech 🔮
+  ];
+
+  for (const { r, c, stage } of civPlacements) {
+    state.grid.cells[r][c].civilization = { stage };
+  }
+
+  renderGrid();
+
+  // Verify each civ cell renders the correct tech emoji as main textContent
+  for (const { r, c, stage } of civPlacements) {
+    const idx = r * 5 + c;
+    const expectedEmoji = TECH_STAGES[stage].emoji;
+    const cellDiv = gridEl.children[idx];
+    assert.strictEqual(
+      cellDiv.textContent,
+      expectedEmoji,
+      `Cell [${r}][${c}] with stage ${stage} (${TECH_STAGES[stage].name}) should render emoji ${expectedEmoji}`
+    );
+  }
+
+  // Verify a cell without civilization does NOT show a civ emoji
+  const emptyIdx = 4 * 5 + 4; // [4][4] has no civ
+  const emptyCell = gridEl.children[emptyIdx];
+  assert.strictEqual(emptyCell.textContent, '', 'Non-civ cell should have no textContent');
+
+  // Restore original grid
+  state.grid = orig;
+
+  console.log('  T36a civilization emoji renders on cell: PASS');
+})();
+
+// --- T36b: render priority — civilization > landmark > cactus ---
+(function testRenderPriorityCivOverLandmark() {
+  const orig = { ...state.grid };
+  state.grid.width = 4;
+  state.grid.height = 4;
+  state.grid.cells = [];
+
+  for (let r = 0; r < 4; r++) {
+    state.grid.cells[r] = [];
+    for (let c = 0; c < 4; c++) {
+      state.grid.cells[r][c] = { biome: 'grassland', creatures: [], civilization: null, unit: null };
+    }
+  }
+
+  // Cell [0][0]: mountain with civ — civ emoji should be main content, landmark as overlay
+  state.grid.cells[0][0].biome = 'mountain';
+  state.grid.cells[0][0].civilization = { stage: 1 };
+
+  // Cell [0][1]: mountain without civ — landmark should be main content
+  state.grid.cells[0][1].biome = 'mountain';
+
+  // Cell [1][0]: desert with cactus and civ — civ emoji main, cactus as overlay
+  state.grid.cells[1][0].biome = 'desert';
+  state.grid.cells[1][0].cactus = true;
+  state.grid.cells[1][0].civilization = { stage: 2 };
+
+  // Cell [1][1]: desert with cactus, no civ — cactus should be main content
+  state.grid.cells[1][1].biome = 'desert';
+  state.grid.cells[1][1].cactus = true;
+
+  renderGrid();
+
+  // [0][0]: civ on mountain — main text is civ emoji, landmark in overlay span
+  const cellCivMountain = gridEl.children[0];
+  assert.ok(cellCivMountain.textContent.includes(TECH_STAGES[1].emoji),
+    'Civ emoji should appear in textContent on mountain');
+  // Landmark should appear as a creature-overlay child span
+  const hasLandmarkOverlay = cellCivMountain.children.some(
+    ch => ch.className === 'creature-overlay' && ch.textContent === '🏔️'
+  );
+  assert.ok(hasLandmarkOverlay, 'Mountain landmark should render as overlay span under civ');
+
+  // [0][1]: mountain without civ — landmark is main content
+  const cellMountain = gridEl.children[1];
+  assert.strictEqual(cellMountain.textContent, '🏔️',
+    'Mountain landmark should be main content when no civ present');
+
+  // [1][0]: civ on desert with cactus — civ emoji main, cactus as overlay
+  const cellCivCactus = gridEl.children[4];
+  assert.ok(cellCivCactus.textContent.includes(TECH_STAGES[2].emoji),
+    'Civ emoji should appear in textContent on cactus tile');
+  const hasCactusOverlay = cellCivCactus.children.some(
+    ch => ch.className === 'creature-overlay' && ch.textContent === '🌵'
+  );
+  assert.ok(hasCactusOverlay, 'Cactus should render as overlay span under civ');
+
+  // [1][1]: cactus without civ — cactus is main content
+  const cellCactus = gridEl.children[5];
+  assert.strictEqual(cellCactus.textContent, '🌵',
+    'Cactus emoji should be main content when no civ present');
+
+  // Restore original grid
+  state.grid = orig;
+
+  console.log('  T36b render priority civ > landmark > cactus: PASS');
+})();
+
+// --- T36c: unit emoji renders as overlay span on cell ---
+(function testUnitEmojiRendersAsOverlay() {
+  const orig = { ...state.grid };
+  state.grid.width = 4;
+  state.grid.height = 4;
+  state.grid.cells = [];
+
+  for (let r = 0; r < 4; r++) {
+    state.grid.cells[r] = [];
+    for (let c = 0; c < 4; c++) {
+      state.grid.cells[r][c] = { biome: 'grassland', creatures: [], civilization: null, unit: null };
+    }
+  }
+
+  // Cell [0][0]: civ with a unit — unit should appear as unit-overlay span
+  state.grid.cells[0][0].civilization = { stage: 1 };
+  state.grid.cells[0][0].unit = { emoji: '🏇', stage: 1, movementType: 'land', row: 0, col: 0, wanderLeft: 8, restTicks: 0 };
+
+  // Cell [0][1]: no civ but has a unit — unit overlay should still render
+  state.grid.cells[0][1].unit = { emoji: '🛶', stage: 2, movementType: 'sea', row: 0, col: 1, wanderLeft: 8, restTicks: 0 };
+
+  // Cell [1][0]: civ with no unit — no unit-overlay span
+  state.grid.cells[1][0].civilization = { stage: 3 };
+
+  // Cell [1][1]: empty cell — nothing rendered
+
+  renderGrid();
+
+  // [0][0]: civ + unit — main content is civ emoji, unit in overlay span
+  const cellCivUnit = gridEl.children[0];
+  assert.ok(cellCivUnit.textContent.includes(TECH_STAGES[1].emoji),
+    'Cell should contain civ emoji');
+  const hasUnitOverlay = cellCivUnit.children.some(
+    ch => ch.className === 'unit-overlay' && ch.textContent === '🏇'
+  );
+  assert.ok(hasUnitOverlay, 'Unit emoji should render as unit-overlay span');
+
+  // [0][1]: no civ but has unit — unit overlay still present
+  const cellNoCivUnit = gridEl.children[1];
+  const hasUnitOverlay2 = cellNoCivUnit.children.some(
+    ch => ch.className === 'unit-overlay' && ch.textContent === '🛶'
+  );
+  assert.ok(hasUnitOverlay2, 'Unit overlay should render even without civ on cell');
+
+  // [1][0]: civ with no unit — no unit-overlay span
+  const cellCivNoUnit = gridEl.children[4];
+  const hasUnitOverlay3 = cellCivNoUnit.children.some(
+    ch => ch.className === 'unit-overlay'
+  );
+  assert.ok(!hasUnitOverlay3, 'Cell with civ but no unit should have no unit-overlay');
+
+  // [1][1]: empty — no overlays at all
+  const cellEmpty = gridEl.children[5];
+  assert.strictEqual(cellEmpty.children.length, 0, 'Empty cell should have no child spans');
+
+  // Restore original grid
+  state.grid = orig;
+
+  console.log('  T36c unit emoji renders as overlay span: PASS');
+})();
+
+// --- T36d: inspect tooltip shows correct tech stage name + emoji for civilization cell ---
+(function testInspectTooltipCivInfo() {
+  const orig = { ...state.grid };
+  state.grid.width = 3;
+  state.grid.height = 3;
+  state.grid.cells = [];
+
+  for (let r = 0; r < 3; r++) {
+    state.grid.cells[r] = [];
+    for (let c = 0; c < 3; c++) {
+      state.grid.cells[r][c] = { biome: 'grassland', creatures: [], civilization: null, unit: null };
+    }
+  }
+
+  // Place civilizations at various stages
+  const civTests = [
+    { r: 0, c: 0, stage: 0, name: 'Stone', emoji: '🛖' },
+    { r: 0, c: 1, stage: 3, name: 'Industrial', emoji: '🏭' },
+    { r: 0, c: 2, stage: 6, name: 'Nanotech', emoji: '🔮' },
+  ];
+
+  for (const { r, c, stage } of civTests) {
+    state.grid.cells[r][c].civilization = { stage, species: 'cow' };
+  }
+
+  renderGrid();
+
+  // Verify tooltip shows correct tech info for each civ
+  for (const { r, c, name, emoji } of civTests) {
+    const idx = r * 3 + c;
+    const cellDiv = gridEl.children[idx];
+    showInspectTooltip(r, c, cellDiv);
+
+    assert.ok(
+      tooltipEl.innerHTML.includes(emoji),
+      `Tooltip for stage ${civTests.indexOf({r,c})} should contain tech emoji ${emoji}`
+    );
+    assert.ok(
+      tooltipEl.innerHTML.includes(name),
+      `Tooltip should contain tech stage name "${name}"`
+    );
+    assert.ok(
+      tooltipEl.innerHTML.includes(`Stage ${state.grid.cells[r][c].civilization.stage}`),
+      'Tooltip should show the stage number'
+    );
+
+    hideTooltip();
+  }
+
+  // Verify cell without civ shows "none" for civilization
+  const emptyIdx = 1 * 3 + 1; // [1][1] has no civ
+  const emptyCellDiv = gridEl.children[emptyIdx];
+  showInspectTooltip(1, 1, emptyCellDiv);
+  assert.ok(
+    tooltipEl.innerHTML.includes('none'),
+    'Tooltip should show "none" for civilization when no civ exists'
+  );
+  hideTooltip();
+
+  // Restore original grid
+  state.grid = orig;
+
+  console.log('  T36d inspect tooltip shows tech stage name + emoji: PASS');
+})();
+
+// --- T36e: inspect tooltip shows unit info (emoji + originating civ stage) when unit present ---
+(function testInspectTooltipUnitInfo() {
+  const orig = { ...state.grid };
+  state.grid.width = 3;
+  state.grid.height = 3;
+  state.grid.cells = [];
+
+  for (let r = 0; r < 3; r++) {
+    state.grid.cells[r] = [];
+    for (let c = 0; c < 3; c++) {
+      state.grid.cells[r][c] = { biome: 'grassland', creatures: [], civilization: null, unit: null };
+    }
+  }
+
+  // Cell [0][0]: civ with a land unit at stage 1 (Bronze)
+  state.grid.cells[0][0].civilization = { stage: 1, species: 'cow' };
+  state.grid.cells[0][0].unit = {
+    emoji: '🏇', stage: 1, movementType: 'land',
+    row: 0, col: 0, wanderLeft: 8, restTicks: 0,
+  };
+
+  // Cell [0][1]: civ with a sea unit at stage 3 (Industrial)
+  state.grid.cells[0][1].biome = 'water';
+  state.grid.cells[0][1].civilization = { stage: 3, species: 'fish' };
+  state.grid.cells[0][1].unit = {
+    emoji: '🚢', stage: 3, movementType: 'sea',
+    row: 0, col: 1, wanderLeft: 5, restTicks: 0,
+  };
+
+  // Cell [1][0]: civ with an air unit at stage 4 (Atomic)
+  state.grid.cells[1][0].civilization = { stage: 4, species: 'bird' };
+  state.grid.cells[1][0].unit = {
+    emoji: '✈️', stage: 4, movementType: 'air',
+    row: 1, col: 0, wanderLeft: 3, restTicks: 0,
+  };
+
+  // Cell [1][1]: no unit — should not show Mobile Unit section
+  state.grid.cells[1][1].civilization = { stage: 2 };
+
+  renderGrid();
+
+  // Test [0][0]: tooltip shows unit emoji + "Bronze unit"
+  const cell0 = gridEl.children[0];
+  showInspectTooltip(0, 0, cell0);
+  assert.ok(tooltipEl.innerHTML.includes('🏇'), 'Tooltip should contain unit emoji 🏇');
+  assert.ok(tooltipEl.innerHTML.includes('Bronze unit'), 'Tooltip should show "Bronze unit"');
+  assert.ok(tooltipEl.innerHTML.includes('Mobile Unit'), 'Tooltip should have Mobile Unit section');
+  hideTooltip();
+
+  // Test [0][1]: tooltip shows sea unit emoji + "Industrial unit"
+  const cell1 = gridEl.children[1];
+  showInspectTooltip(0, 1, cell1);
+  assert.ok(tooltipEl.innerHTML.includes('🚢'), 'Tooltip should contain unit emoji 🚢');
+  assert.ok(tooltipEl.innerHTML.includes('Industrial unit'), 'Tooltip should show "Industrial unit"');
+  hideTooltip();
+
+  // Test [1][0]: tooltip shows air unit emoji + "Atomic unit"
+  const cell2 = gridEl.children[3];
+  showInspectTooltip(1, 0, cell2);
+  assert.ok(tooltipEl.innerHTML.includes('✈️'), 'Tooltip should contain unit emoji ✈️');
+  assert.ok(tooltipEl.innerHTML.includes('Atomic unit'), 'Tooltip should show "Atomic unit"');
+  hideTooltip();
+
+  // Test [1][1]: no unit — should not have Mobile Unit section with unit info
+  const cell3 = gridEl.children[4];
+  showInspectTooltip(1, 1, cell3);
+  assert.ok(!tooltipEl.innerHTML.includes('Mobile Unit'),
+    'Tooltip should not show Mobile Unit section when no unit present');
+  hideTooltip();
+
+  // Restore original grid
+  state.grid = orig;
+
+  console.log('  T36e inspect tooltip shows unit info: PASS');
 })();
 
 console.log('\nAll renderer integration tests passed.');
