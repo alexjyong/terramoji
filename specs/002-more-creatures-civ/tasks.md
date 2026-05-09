@@ -268,12 +268,12 @@
   - [x] **T36d** Test inspect tooltip shows correct tech stage name + emoji for civilization cell
   - [x] **T36e** Test inspect tooltip shows unit info (emoji + originating civ stage) when unit present
 
-- [ ] **T37** Run full test suite, fix any failures
+- [x] **T37** Run full test suite, fix any failures
   - _Files: `tests/test_simulation.js`, `tests/test_renderer.js`_
 
-  - [ ] **T37a** Run `tests/test_simulation.js` — verify all existing tests pass (T31–T33 + new T34/T35)
-  - [ ] **T37b** Run `tests/test_renderer.js` — verify all existing tests pass (T3 + new T36)
-  - [ ] **T37c** Fix any failing tests (if any)
+  - [x] **T37a** Run `tests/test_simulation.js` — verify all existing tests pass (T31–T33 + new T34/T35)
+  - [x] **T37b** Run `tests/test_renderer.js` — verify all existing tests pass (T3 + new T36)
+  - [x] **T37c** Fix any failing tests (if any)
 
 - [ ] **T38** ⚠️ Manual verification — quickstart scenarios from `quickstart.md`
   - Launch game in browser, create civ, watch it advance, watch units spread
