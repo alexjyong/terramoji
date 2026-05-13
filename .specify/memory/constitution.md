@@ -1,11 +1,11 @@
 <!--
 Sync Impact Report:
-- Version change: 1.1.0 → 1.2.0 (minor: landmark entities added, biome count expanded to 7)
-- Modified principles: II. Emoji-First Graphics (Entities) + CSS Terrain — landmark concept added
+- Version change: 1.2.0 → 1.3.0 (minor: "No Replica Logic in Tests" principle added to Development Workflow)
+- Modified principles: None — new guidance added under Development Workflow → Testing
 - Added sections: None
 - Removed sections: None
 - Templates requiring updates: N/A
-- Follow-up TODOs: None
+- Follow-up TODOs: Refactor tests/test_simulation.js to use real game functions (eval-IIFE pattern) instead of replica helpers
 -->
 
 # Terramoji Constitution
@@ -70,6 +70,8 @@ Features are delivered in vertical slices: terrain generation ships with biome p
 
 **Testing**: Unit tests cover simulation logic (tick advancement, creature behavior, biome effects). Integration tests verify the full render cycle: state change → DOM update. Tests are written before simulation logic changes.
 
+**No Replica Logic in Tests**: Simulation tests MUST call the actual game functions from `js/simulation.js` (e.g., `spawnUnit()`, `moveUnits()`, `countActiveUnits()`). Tests MUST NOT duplicate game logic in replica helper functions — diverging replicas produce silent false positives. When browser globals (`state`, `document`) are needed, tests MUST load real source files via the eval-IIFE pattern and manipulate the real `state` object directly. Deterministic behavior is achieved by monkey-patching `Math.random` with a seeded PRNG.
+
 **Documentation**: `README.md` is kept current with setup instructions, feature status, and known limitations. Each feature branch includes a brief description in the branch name and commit messages.
 
 **Quickstart Validation**: After each feature merge, the game MUST be launchable via a single command and reachable within 10 seconds. If quickstart breaks, it is treated as a blocker.
@@ -91,4 +93,4 @@ This constitution supersedes all other development practices for the Terramoji p
 
 **Compliance**: Every PR and feature plan MUST reference applicable constitution principles. The plan template's Constitution Check gate enforces this.
 
-**Version**: 1.2.0 | **Ratified**: 2026-04-24 | **Last Amended**: 2026-04-26
+**Version**: 1.3.0 | **Ratified**: 2026-04-24 | **Last Amended**: 2026-05-08

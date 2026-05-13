@@ -19,6 +19,50 @@ header {
   padding: 1rem;
 }
 
+/* --- Status Bar (toast messages) --- */
+
+.status-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 200;
+  display: flex;
+  justify-content: center;
+  padding: 0.5rem;
+  pointer-events: none;
+  transition: opacity 0.3s;
+}
+
+.status-bar.hidden {
+  opacity: 0;
+}
+
+.status-bar:not(.hidden) {
+  opacity: 1;
+}
+
+.status-bar-inner {
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.9rem;
+  font-weight: bold;
+  color: #eee;
+  background: rgba(22, 33, 62, 0.95);
+  border: 2px solid #7CB342;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+.status-bar.error .status-bar-inner {
+  border-color: #e74c3c;
+  background: rgba(80, 10, 10, 0.95);
+}
+
+.status-bar.success .status-bar-inner {
+  border-color: #7CB342;
+  background: rgba(20, 60, 10, 0.95);
+}
+
 h1 {
   font-size: 1.5rem;
   margin-bottom: 0.5rem;
@@ -92,6 +136,18 @@ h1 {
   line-height: 1;
   pointer-events: none;
   z-index: 2;
+}
+
+/* --- Mobile unit overlay (top-left) --- */
+
+.unit-overlay {
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  font-size: 13px;
+  line-height: 1;
+  pointer-events: none;
+  z-index: 3;
 }
 
 /* --- Biome Terrain Styles (CSS gradients + textures) --- */
@@ -210,6 +266,27 @@ h1 {
   pointer-events: none;
 }
 
+/* --- Civilization Tool Buttons --- */
+
+.civ-buttons {
+  display: flex;
+  gap: 0.25rem;
+  padding-left: 0.75rem;
+  border-left: 2px solid #333;
+  margin-left: 0.25rem;
+}
+
+.civ-buttons button {
+  font-size: 1.1rem;
+  padding: 0.45rem 0.75rem;
+}
+
+.civ-buttons button.active {
+  border-color: #E8B84D;
+  background: #3a2e0a;
+  box-shadow: 0 0 6px rgba(232, 184, 77, 0.5);
+}
+
 /* --- Biome Selection Buttons --- */
 
 .biome-buttons {
@@ -247,8 +324,9 @@ h1 {
   font-size: 0.85rem;
   line-height: 1.4;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
-  pointer-events: none;
+  pointer-events: auto;
   max-width: 320px;
+  cursor: pointer;
 }
 
 .inspect-tooltip.hidden {
@@ -283,4 +361,78 @@ h1 {
 .tooltip-civilization {
   color: #ccc;
   font-size: 0.8rem;
+}
+
+/* --- T39e: Civ Picker Panel --- */
+
+.civ-picker {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.5rem;
+  background: rgba(10, 10, 30, 0.92);
+  border: 1px solid #7CB342;
+  border-radius: 0.5rem;
+  margin: 0.3rem auto;
+  max-width: 95vw;
+  overflow-x: auto;
+  overflow-y: hidden;
+  white-space: nowrap;
+}
+
+.civ-picker.hidden {
+  display: none;
+}
+
+#btn-civ-close {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border: 1px solid #888;
+  border-radius: 50%;
+  background: #333;
+  color: #ccc;
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#btn-civ-close:hover {
+  background: #555;
+  color: #fff;
+}
+
+#civ-picker-stages {
+  display: flex;
+  gap: 0.3rem;
+  align-items: center;
+}
+
+.civ-stage-btn {
+  flex-shrink: 0;
+  padding: 0.25rem 0.55rem;
+  border: 2px solid #7CB342;
+  border-radius: 0.35rem;
+  background: #1a3a1a;
+  color: #e0e0e0;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.civ-stage-btn.active:hover {
+  background: #2a5a2a;
+  color: #fff;
+  border-color: #9ccc65;
+}
+
+.civ-stage-btn.disabled {
+  opacity: 0.3;
+  pointer-events: none;
+  border-color: #555;
+  background: #222;
+  color: #666;
 }
