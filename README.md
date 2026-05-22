@@ -10,6 +10,9 @@ This was ran on a Macbook Pro M5 with 48G of RAM.
 
 [See towermoji](https://github.com/alexjyong/towermoji) for a similar project.
 
+
+❗ [You can play in your brower now at this link!](https://alexjyong.dev/terramoji/)
+
 ---
 
 ## 🎮 Playing the Game
