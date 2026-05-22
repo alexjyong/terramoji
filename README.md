@@ -6,7 +6,9 @@ TerraMoji is a SimEarth-inspired emoji planet simulation. Generate a random worl
 
 **This entire project was designed and implemented with [Qwen Code](https://qwen.ai) ([Qwen3-2.6-27B](https://lmstudio.ai/models/qwen/qwen3.6-27b)) using the [Spec Kit](https://github.com/qwenlm/spec-kit) workflow.** [LM Studio](https://lmstudio.ai/) is what ran the model. The goal is to demonstrate that a local LLM, guided by structured specification workflows, can take a well defined idea and produce a working, tested, multi-feature application.
 
-This was ran on a Macbook Pro M5 with 48G of RAM
+This was ran on a Macbook Pro M5 with 48G of RAM.
+
+[See towermoji](https://github.com/alexjyong/towermoji) for a similar project.
 
 ---
 
